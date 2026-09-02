@@ -20,8 +20,14 @@
                     <input
                         type="date"
                         name="due_at"
+                        x-ref="dueAt"
                         class="rounded-full border border-border bg-transparent px-3 py-1 text-text-muted focus:border-primary focus:text-text focus:outline-none"
                     >
+                    <button
+                        type="button"
+                        @click="$refs.dueAt.value = '{{ now()->format('Y-m-d') }}'"
+                        class="rounded-full border border-border px-3 py-1 text-text-muted transition-colors hover:text-text"
+                    >Heute</button>
                     <input type="hidden" name="area" :value="area">
                     <button
                         type="button"

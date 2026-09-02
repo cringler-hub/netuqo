@@ -39,10 +39,16 @@
             <input
                 type="date"
                 name="due_at"
+                x-ref="dueAtEdit"
                 value="{{ $task->due_at?->format('Y-m-d') }}"
                 onchange="this.form.submit()"
                 class="rounded-full border border-border bg-transparent px-2 py-0.5 text-xs text-text focus:border-primary focus:outline-none"
             >
+            <button
+                type="button"
+                @click="$refs.dueAtEdit.value = '{{ now()->format('Y-m-d') }}'; $refs.dueAtEdit.form.submit()"
+                class="ml-1 rounded-full border border-border px-2 py-0.5 text-xs text-text-muted transition-colors hover:text-text"
+            >Heute</button>
         </form>
     </div>
     <form method="POST" action="{{ route('tasks.destroy', $task) }}" onsubmit="return confirm('Aufgabe wirklich löschen?')">
