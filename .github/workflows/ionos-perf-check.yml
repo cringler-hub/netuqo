@@ -16,19 +16,29 @@ jobs:
     environment: production
 
     steps:
+      # Known from earlier this session: this account's WAF treats GitHub Actions'
+      # cloud IP ranges differently (previously a block page, here even a TLS-level
+      # failure — curl exit 35). Best-effort only; the SSH-internal step below is
+      # what actually isolates app/DB time from network/WAF.
       - name: External timing (this runner -> netuqo.com, like a real request)
+        continue-on-error: true
         run: |
+          set +e
           for i in 1 2 3; do
-            curl -s -o /tmp/resp.json -w 'run '"$i"': time_namelookup=%{time_namelookup} time_connect=%{time_connect} time_appconnect=%{time_appconnect} time_starttransfer=%{time_starttransfer} time_total=%{time_total}\n' https://netuqo.com/diag-perf
+            curl -s -o /tmp/resp.json -w 'run '"$i"': time_namelookup=%{time_namelookup} time_connect=%{time_connect} time_appconnect=%{time_appconnect} time_starttransfer=%{time_starttransfer} time_total=%{time_total} exit=%{exitcode}\n' https://netuqo.com/diag-perf
           done
           echo "--- last response body ---"
           cat /tmp/resp.json
+          exit 0
 
       - name: External timing for GET / (the page that reloads after every capture)
+        continue-on-error: true
         run: |
+          set +e
           for i in 1 2 3; do
-            curl -s -o /dev/null -w 'run '"$i"': time_total=%{time_total}\n' https://netuqo.com/
+            curl -s -o /dev/null -w 'run '"$i"': time_total=%{time_total} exit=%{exitcode}\n' https://netuqo.com/
           done
+          exit 0
 
       - name: Internal timing via SSH (bypasses external network/WAF)
         uses: appleboy/ssh-action@v1.2.0
