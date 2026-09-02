@@ -1,0 +1,28 @@
+name: IONOS connection check (temporary)
+
+# Diagnoses the 500 on POST /tasks: tails the real Laravel log on the server.
+# Delete once resolved.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Tail Laravel's own log + reproduce the POST from the runner
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.IONOS_SSH_HOST }}
+          port: ${{ secrets.IONOS_SSH_PORT }}
+          username: ${{ secrets.IONOS_SSH_USER }}
+          password: ${{ secrets.IONOS_SSH_PASSWORD }}
+          script: |
+            echo "--- storage/logs/ contents ---"
+            ls -la "${{ secrets.IONOS_TARGET_DIR }}/storage/logs"
+            echo "--- tail of laravel.log ---"
+            tail -n 150 "${{ secrets.IONOS_TARGET_DIR }}/storage/logs/laravel.log" 2>&1 || echo "no laravel.log"
+            echo "--- php8.4-cli artisan about (sanity check) ---"
+            cd "${{ secrets.IONOS_TARGET_DIR }}"
+            /usr/bin/php8.4-cli artisan about 2>&1 | head -40
