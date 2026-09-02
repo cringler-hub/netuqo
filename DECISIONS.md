@@ -337,10 +337,27 @@ netuqo has three screens and stays a single `max-w-2xl` column, so a grid system
 to apply to here. Adopting a visual token language doesn't require also inventing a page
 layout the product doesn't need.
 
-**Open:** The new logo/wordmark image was shared only as an inline chat preview, not as a
-file, so the header still uses a styled text wordmark (`brand-gradient-text` in `app.css`)
-instead of the actual mark. Swap it in once the asset file is provided.
-
 **Simplicity impact:** Net neutral to slightly negative on raw simplicity (three font
 families instead of one, added glow/gradient CSS) — an explicit trade the user made for
 brand identity. No change to information architecture, required fields, or click counts.
+
+---
+
+## 2026-09-02 — Logo added: icon mark only, not the full lockup
+
+**Decision:** The provided `logo.png` (full lockup: icon + "netuqo" wordmark + tagline, on a
+white background, no transparency) is used in the header as just the icon mark — cropped,
+background keyed to transparent, saved to `public/images/logo-icon.png`. The wordmark stays
+the existing styled text (`brand-gradient-text`) next to it. The original file is kept at
+`resources/images/logo-source.png` for future re-processing.
+
+**Reason:** The wordmark in the supplied PNG is a dark navy almost identical to the new
+Premium Noir background color — on the dark header it was essentially invisible (checked by
+compositing it onto `#0b1326` directly). The icon mark (blue gradient) reads cleanly on dark
+and carries the brand recognition; recoloring the wordmark pixels in a flattened raster
+without the source vector risked a botched edit. Text stays legible and on-brand as-is.
+
+**Rejected alternative:** Using the full lockup as shipped, accepting the illegible wordmark
+— rejected as a visible regression, not a style choice.
+
+**Simplicity impact:** None — same header layout, one added `<img>`.
