@@ -11,6 +11,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check whether .env is publicly reachable right now
+        run: |
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://netuqo.com/.env)
+          echo "https://netuqo.com/.env -> HTTP $CODE"
+          if [ "$CODE" = "200" ]; then
+            echo "::error::.env IS PUBLICLY READABLE RIGHT NOW. Fix the document root immediately."
+          else
+            echo "Not publicly readable (got $CODE) — good."
+          fi
+
       - name: Inspect deployed app + server error logs
         uses: appleboy/ssh-action@v1.2.0
         with:
