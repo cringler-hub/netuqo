@@ -1,9 +1,9 @@
 name: IONOS connection check (temporary)
 
-# CLI reproduction of the exact controller logic (User::firstOrCreate + tasks()->create)
-# succeeded fine — so the 500 is specific to the HTTP path (middleware/session/CSRF),
-# not the app logic. Temporarily flip APP_DEBUG on to see the real exception, then flip
-# it back off. Delete this workflow once resolved.
+# Isolating the POST /tasks 500: /diag-ping goes through normal CSRF, /diag-ping-nocsrf
+# is excluded from CSRF entirely. If nocsrf works but the other doesn't, it's CSRF/session.
+# If both fail, it's something more fundamental about POST on this server. Delete once
+# resolved, along with the diag routes in routes/web.php and bootstrap/app.php.
 
 on:
   workflow_dispatch: {}
@@ -16,41 +16,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Temporarily enable APP_DEBUG, reproduce, then disable it again
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.IONOS_SSH_HOST }}
-          port: ${{ secrets.IONOS_SSH_PORT }}
-          username: ${{ secrets.IONOS_SSH_USER }}
-          password: ${{ secrets.IONOS_SSH_PASSWORD }}
-          script: |
-            set -e
-            cd "${{ secrets.IONOS_TARGET_DIR }}"
-            sed -i 's/^APP_DEBUG=false/APP_DEBUG=true/' .env
-            /usr/bin/php8.4-cli artisan config:cache
-            echo "--- APP_DEBUG is now true, config re-cached ---"
-
-      - name: Reproduce POST /tasks with debug on (full response)
+      - name: Test both diagnostic POST endpoints
         run: |
+          echo "--- POST /diag-ping-nocsrf (no CSRF middleware at all, no body) ---"
+          curl -s -o /tmp/nocsrf.html -w "HTTP %{http_code}\n" -X POST http://netuqo.com/diag-ping-nocsrf
+          head -c 500 /tmp/nocsrf.html; echo
+
+          echo "--- POST /diag-ping WITHOUT a valid token (expect a clean 419, not a raw 500) ---"
+          curl -s -o /tmp/noauth.html -w "HTTP %{http_code}\n" -X POST http://netuqo.com/diag-ping
+          head -c 500 /tmp/noauth.html; echo
+
+          echo "--- POST /diag-ping WITH a valid session + token ---"
           curl -s -c /tmp/cookies.txt -o /tmp/home.html -w "GET / -> HTTP %{http_code}\n" http://netuqo.com/
           TOKEN=$(grep -oP 'name="_token" value="\K[^"]+' /tmp/home.html || true)
-          curl -s -b /tmp/cookies.txt -o /tmp/post.html -w "POST /tasks -> HTTP %{http_code}\n" \
-            -d "title=Diagnostic+Test+Task" -d "_token=${TOKEN}" http://netuqo.com/tasks
-          echo "--- response body (first 200 lines) ---"
-          head -n 200 /tmp/post.html
-
-      - name: Disable APP_DEBUG again (always runs, even if the step above failed)
-        if: always()
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.IONOS_SSH_HOST }}
-          port: ${{ secrets.IONOS_SSH_PORT }}
-          username: ${{ secrets.IONOS_SSH_USER }}
-          password: ${{ secrets.IONOS_SSH_PASSWORD }}
-          script: |
-            set -e
-            cd "${{ secrets.IONOS_TARGET_DIR }}"
-            sed -i 's/^APP_DEBUG=true/APP_DEBUG=false/' .env
-            /usr/bin/php8.4-cli artisan config:cache
-            echo "--- APP_DEBUG is back to false, config re-cached ---"
-            grep '^APP_DEBUG=' .env
+          curl -s -b /tmp/cookies.txt -o /tmp/ping.html -w "HTTP %{http_code}\n" -d "_token=${TOKEN}" http://netuqo.com/diag-ping
+          head -c 500 /tmp/ping.html; echo
