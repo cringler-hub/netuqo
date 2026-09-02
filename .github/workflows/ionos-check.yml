@@ -47,3 +47,12 @@ jobs:
             fi
             echo "--- storage/logs/laravel.log tail again (post-repro) ---"
             tail -n 40 storage/logs/laravel.log 2>&1 || echo "no laravel.log"
+            echo "--- reproduce the exact controller logic via CLI (real errors show here) ---"
+            /usr/bin/php8.4-cli artisan tinker --execute="
+              \$u = App\Models\User::firstOrCreate(['email' => 'owner@netuqo.com'], ['name' => 'Owner', 'password' => bcrypt(str()->random(40))]);
+              echo 'user ok: ' . \$u->id . PHP_EOL;
+              \$t = \$u->tasks()->create(['title' => 'CLI Diagnostic Task', 'due_at' => null, 'area' => null]);
+              echo 'task ok: ' . \$t->id . PHP_EOL;
+            " 2>&1
+            echo "--- tasks table schema ---"
+            /usr/bin/php8.4-cli artisan tinker --execute="print_r(DB::select('describe tasks'));" 2>&1
