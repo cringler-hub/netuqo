@@ -1,0 +1,40 @@
+name: IONOS connection check (temporary)
+
+# Diagnoses a 403 on netuqo.com: confirms public/index.php exists with sane permissions,
+# and surfaces the server's own error log for the real reason. Delete once resolved.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Inspect deployed app + server error logs
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.IONOS_SSH_HOST }}
+          port: ${{ secrets.IONOS_SSH_PORT }}
+          username: ${{ secrets.IONOS_SSH_USER }}
+          password: ${{ secrets.IONOS_SSH_PASSWORD }}
+          script: |
+            echo "--- top-level app dir ---"
+            ls -la "${{ secrets.IONOS_TARGET_DIR }}"
+            echo "--- public/ dir (this must be the domain's document root) ---"
+            ls -la "${{ secrets.IONOS_TARGET_DIR }}/public"
+            echo "--- .env present? ---"
+            ls -la "${{ secrets.IONOS_TARGET_DIR }}/.env" 2>&1 || echo "no .env found"
+            echo "--- storage/ writable dirs present? ---"
+            ls -la "${{ secrets.IONOS_TARGET_DIR }}/storage" 2>&1 || echo "no storage dir"
+            echo "--- logs/ folder at webspace root ---"
+            ls -la ~/logs 2>&1 || echo "no ~/logs"
+            echo "--- most recently modified file in logs/ ---"
+            LATEST=$(ls -t ~/logs 2>/dev/null | head -1)
+            echo "latest: $LATEST"
+            if [ -n "$LATEST" ]; then
+              echo "--- tail of $LATEST ---"
+              tail -n 60 ~/logs/"$LATEST" 2>&1 || true
+              echo "--- recursive: any subfolders in logs/? ---"
+              find ~/logs -maxdepth 2 -type f -newer "${{ secrets.IONOS_TARGET_DIR }}/public/index.php" 2>&1 | head -20
+            fi
