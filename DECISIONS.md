@@ -95,3 +95,25 @@ PHP version parsing Laravel 13 code, or rsync writing outside the account). Chea
 verify once with a disposable diagnostic workflow than to debug a failed production deploy.
 
 **Simplicity impact:** None on the product; pure deploy-plumbing correctness.
+
+---
+
+## 2026-09-02 — Quick Capture ships before login
+
+**Decision:** Build Capture (title + optional Business/Privat + optional due date) now,
+persisted to the real `tasks` table, before Login exists. Every task is still scoped to a
+real `user_id` — `Controller::currentUser()` resolves (and lazily creates) a single fixed
+"Owner" user until real authentication is built, rather than leaving `user_id` nullable or
+unscoped.
+
+**Reason:** User priority call: Capture is the thing to validate first; login is
+infrastructure around it. ARCHITECTURE.md's "ownership everywhere" guardrail still holds —
+we did not weaken the data model to get here, only deferred the UI for switching users.
+
+**Rejected alternative:** Making `tasks.user_id` nullable until login ships — rejected,
+that's exactly the kind of retrofit ARCHITECTURE.md says to avoid; scoping from day one
+costs nothing here since there's only ever one row in `users` for now.
+
+**Simplicity impact:** None on the current single-user experience. `currentUser()` is a
+single, clearly-commented method to delete once login exists — not spread across the
+codebase.
