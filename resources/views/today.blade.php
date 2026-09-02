@@ -47,6 +47,8 @@
         @enderror
     </section>
 
+    <x-area-filter route="today" :area="$area" />
+
     <section class="flex flex-col">
         @forelse ($tasks as $task)
             <x-task-row :task="$task" />

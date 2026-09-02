@@ -114,4 +114,37 @@ class TaskCaptureTest extends TestCase
         $this->get('/done')->assertOk()->assertDontSee('Termin verschieben');
         $this->get('/')->assertOk()->assertSee('Termin verschieben');
     }
+
+    public function test_a_tasks_due_date_can_be_changed_afterwards(): void
+    {
+        $this->post('/tasks', ['title' => 'Workshop vorbereiten', 'due_at' => now()->addDays(5)->format('Y-m-d')]);
+        $task = Task::first();
+
+        $response = $this->patch(route('tasks.update', $task), ['due_at' => now()->format('Y-m-d')]);
+
+        $response->assertRedirect();
+        $this->assertSame(now()->format('Y-m-d'), $task->fresh()->due_at->format('Y-m-d'));
+        $this->get('/')->assertOk()->assertSee('Workshop vorbereiten');
+        $this->get('/later')->assertOk()->assertDontSee('Workshop vorbereiten');
+    }
+
+    public function test_a_tasks_due_date_can_be_cleared(): void
+    {
+        $this->post('/tasks', ['title' => 'Ohne Termin', 'due_at' => now()->format('Y-m-d')]);
+        $task = Task::first();
+
+        $this->patch(route('tasks.update', $task), ['due_at' => '']);
+
+        $this->assertNull($task->fresh()->due_at);
+    }
+
+    public function test_tasks_can_be_filtered_by_area(): void
+    {
+        $this->post('/tasks', ['title' => 'Angebot senden', 'area' => 'business', 'due_at' => now()->format('Y-m-d')]);
+        $this->post('/tasks', ['title' => 'Geschenk kaufen', 'area' => 'private', 'due_at' => now()->format('Y-m-d')]);
+
+        $this->get('/?area=business')->assertOk()->assertSee('Angebot senden')->assertDontSee('Geschenk kaufen');
+        $this->get('/?area=private')->assertOk()->assertSee('Geschenk kaufen')->assertDontSee('Angebot senden');
+        $this->get('/')->assertOk()->assertSee('Angebot senden')->assertSee('Geschenk kaufen');
+    }
 }

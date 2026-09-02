@@ -4,6 +4,8 @@
         <p class="mt-1 text-text-muted">Was du schon geschafft hast.</p>
     </section>
 
+    <x-area-filter route="done" :area="$area" />
+
     <section class="flex flex-col">
         @forelse ($tasks as $task)
             <x-task-row :task="$task" />

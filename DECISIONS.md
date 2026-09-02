@@ -203,3 +203,23 @@ pattern already established.
 **Simplicity impact:** Nav stays at 3 items (Heute/Später/Erledigt), same ceiling
 MANIFESTO.md sets. Removing the unused Einstellungen link reduces surface rather than adding
 to it.
+
+---
+
+## 2026-09-02 — Editable due date, area filter as a query param
+
+**Decision:** A task's due date can be changed after capture (inline on the task row, click
+the date to edit, auto-saves via `PATCH /tasks/{task}`). Heute/Später/Erledigt can each be
+filtered to Business or Privat via `?area=` on the same URL, shown as three small toggle
+links (Alle/Business/Privat) above the list.
+
+**Reason:** User feedback: a wrong or changing due date had no way to be corrected, and with
+Business and Privat tasks mixed together there was no way to see just one area.
+
+**Rejected alternative:** A full task-edit screen — rejected, this is exactly one field
+(area is set at capture and rarely needs changing after; only due date drifts in practice).
+Client-side JS filtering instead of `?area=` — rejected, a plain query param keeps the filter
+state in the URL (shareable/bookmarkable, survives a reload) with no added JS state.
+
+**Simplicity impact:** No new screen, no new required field. The filter is off by default
+(plain "Alle") so it doesn't add a decision to the default path.

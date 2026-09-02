@@ -4,6 +4,8 @@
         <p class="mt-1 text-text-muted">Alles, was noch nicht heute dran ist.</p>
     </section>
 
+    <x-area-filter route="later" :area="$area" />
+
     <section class="flex flex-col">
         @forelse ($tasks as $task)
             <x-task-row :task="$task" />

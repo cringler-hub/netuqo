@@ -26,3 +26,7 @@ body {
     background-color: var(--color-background);
     color: var(--color-text);
 }
+
+[x-cloak] {
+    display: none;
+}

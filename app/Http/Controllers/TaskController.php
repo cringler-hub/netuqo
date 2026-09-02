@@ -21,6 +21,19 @@ class TaskController extends Controller
         return redirect()->route('today');
     }
 
+    public function update(Request $request, Task $task): RedirectResponse
+    {
+        abort_unless($task->user_id === $this->currentUser()->id, 403);
+
+        $validated = $request->validate([
+            'due_at' => ['nullable', 'date'],
+        ]);
+
+        $task->update($validated);
+
+        return redirect()->back();
+    }
+
     public function complete(Task $task): RedirectResponse
     {
         abort_unless($task->user_id === $this->currentUser()->id, 403);
