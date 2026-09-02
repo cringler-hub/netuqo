@@ -45,8 +45,8 @@ scoped to a `production` environment with a manual-approval rule if you want a s
 | `IONOS_SSH_HOST`           | The SFTP/SSH host, e.g. `home26909034.1and1-data.host`.                |
 | `IONOS_SSH_PORT`           | `22`                                                                    |
 | `IONOS_SSH_USER`           | The SSH username (e.g. `p7622742`).                                    |
-| `IONOS_SSH_PRIVATE_KEY`    | Private key of a **dedicated deploy keypair** (see step 6 below) — not your personal key. |
-| `IONOS_TARGET_DIR`         | Absolute remote path the app is deployed into (see step 3).            |
+| `IONOS_SSH_PASSWORD`       | The account password. This IONOS webspace has no SSH-key management, so we authenticate with the password instead of a keypair — same as your other GitHub secrets. |
+| `IONOS_TARGET_DIR`         | Absolute remote path the app is deployed into (see step 3), e.g. `/netuqo`. |
 
 ## IONOS setup (one-time, manual)
 
@@ -63,16 +63,16 @@ DNS for you. These steps happen once, by hand.
    user. Note the host, database name, username, password — you'll need them for the
    server's `.env` (step 5).
 
-3. **Point the domain at the right folder, and decide the target path.** `netuqo.com` must
-   serve the app's `public/` folder as the webroot — never the app root (that would expose
-   `.env`, `app/`, etc.). Connect once via SFTP/SSH (the credentials you already have) and
-   check the existing folder layout:
-   - If you can set a **custom document root per domain**: deploy the whole app to e.g.
-     `/netuqo/` (this becomes `IONOS_TARGET_DIR`) and point `netuqo.com`'s document root at
-     `/netuqo/public`.
-   - If the docroot is fixed to your webspace root: deploy the app one level above and put a
-     forwarding `index.php`/`.htaccess` in the actual web root that includes
-     `public/index.php`. Tell me which case you're in and I'll add the forwarding files.
+3. **Point the domain at the right folder.** This webspace hosts multiple domains, one
+   top-level folder each (`leadscout/`, `messefeedback/`, ...) — same pattern applies to
+   netuqo. `netuqo.com` must serve the app's `public/` folder as the webroot, never the app
+   root (that would expose `.env`, `app/`, etc.):
+   - Create a `netuqo/` folder at the webspace root (via SFTP, or it may get created
+     automatically when you assign the domain).
+   - In the IONOS panel under **Domains & SSL → netuqo.com**, set the domain's starting
+     directory/document root to `netuqo/public`.
+   - `IONOS_TARGET_DIR` (the GitHub secret) is then `/netuqo` — the deploy rsyncs the whole
+     app there, and the domain only ever serves the `public/` subfolder of it.
 
 4. **Enable HTTPS.** Activate the free SSL/TLS certificate (Let's Encrypt) IONOS offers for
    the domain, and force HTTPS.
@@ -98,16 +98,14 @@ DNS for you. These steps happen once, by hand.
    chmod -R 775 storage bootstrap/cache
    ```
 
-6. **Create a dedicated deploy SSH keypair** (don't reuse your personal login key):
-
-   ```bash
-   ssh-keygen -t ed25519 -f netuqo_deploy_key -C "netuqo-ci-deploy" -N ""
-   ```
-
-   Add the **public** key (`netuqo_deploy_key.pub`) via the IONOS panel's SSH-key management
-   for this webspace user, then store the **private** key (`netuqo_deploy_key`) as the
-   `IONOS_SSH_PRIVATE_KEY` GitHub secret. This lets CI deploy without your personal password
-   ever touching GitHub, and it can be revoked independently.
+6. **Verify real shell access.** The workflow's post-deploy step (`php artisan migrate
+   --force`) needs an actual interactive SSH shell on IONOS, not just SFTP file transfer —
+   these are two different things some shared-hosting "SSH access" only half-supports. Test
+   it once by hand: `ssh p7622742@home26909034.1and1-data.host`. If you land at a shell
+   prompt, we're good — the workflow as written will work. If the connection is refused or
+   immediately closed, the account is SFTP-only and the migrate step needs a different
+   mechanism (e.g. a one-off protected web route CI calls over HTTPS instead of SSH) — tell
+   me and I'll swap that step.
 
 7. **First deploy.** Push to `main` (or run the workflow manually via **Actions → Deploy to
    IONOS → Run workflow**) once secrets are set. Watch the Actions log — the workflow syncs

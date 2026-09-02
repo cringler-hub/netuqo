@@ -56,3 +56,20 @@ scale past the first deploy and are an easy way to forget a schema change in pro
 
 **Simplicity impact:** None on the product; strictly reduces operational risk/toil for the
 person running netuqo.
+
+---
+
+## 2026-09-02 — SSH auth: password, not keypair
+
+**Decision:** Deploy authenticates to IONOS with a password (`IONOS_SSH_PASSWORD` secret),
+not the dedicated keypair originally planned.
+
+**Reason:** Checked — this IONOS webspace has no SSH public-key management UI. Password
+auth via a GitHub secret is the available option, consistent with how other GitHub secrets
+are already handled on this account.
+
+**Rejected alternative:** Blocking the deploy pipeline on IONOS adding key support —
+rejected, no such option exists on this package tier.
+
+**Simplicity impact:** None on the product. Slightly less rotable than a keypair; rotate by
+changing the account password and the GitHub secret together if ever needed.

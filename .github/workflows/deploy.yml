@@ -43,33 +43,36 @@ jobs:
       # depend on composer being available/network-reachable on the IONOS side. `storage/`
       # is excluded on purpose: it holds runtime state (logs, cache, sessions, uploads)
       # that must survive across deploys, not be overwritten from a fresh checkout.
-      - name: Sync files to IONOS over SSH
-        uses: easingthemes/ssh-deploy@v5
-        with:
-          SSH_PRIVATE_KEY: ${{ secrets.IONOS_SSH_PRIVATE_KEY }}
-          REMOTE_HOST: ${{ secrets.IONOS_SSH_HOST }}
-          REMOTE_PORT: ${{ secrets.IONOS_SSH_PORT }}
-          REMOTE_USER: ${{ secrets.IONOS_SSH_USER }}
-          SOURCE: './'
-          TARGET: ${{ secrets.IONOS_TARGET_DIR }}
-          ARGS: '-avzr --delete'
-          EXCLUDE: |
-            /.git/
-            /.github/
-            /node_modules/
-            /tests/
-            /.env
-            /.env.example
-            /storage/
-            /database/*.sqlite
+      #
+      # IONOS's SSH access here has no key-management UI, so we authenticate with a
+      # password (stored as a GitHub secret) instead of a keypair.
+      - name: Sync files to IONOS over SFTP
+        env:
+          SSHPASS: ${{ secrets.IONOS_SSH_PASSWORD }}
+        run: |
+          sudo apt-get update -y -qq && sudo apt-get install -y -qq sshpass rsync
+          sshpass -e rsync -avzr --delete \
+            -e "ssh -p ${{ secrets.IONOS_SSH_PORT }} -o StrictHostKeyChecking=accept-new" \
+            --exclude=/.git/ \
+            --exclude=/.github/ \
+            --exclude=/node_modules/ \
+            --exclude=/tests/ \
+            --exclude=/.env \
+            --exclude=/.env.example \
+            --exclude=/storage/ \
+            --exclude=/database/*.sqlite \
+            ./ "${{ secrets.IONOS_SSH_USER }}@${{ secrets.IONOS_SSH_HOST }}:${{ secrets.IONOS_TARGET_DIR }}"
 
+      # This step needs a real interactive shell on the IONOS side (not just SFTP file
+      # transfer) to run artisan commands. If the account turns out to be SFTP-only,
+      # this step will fail — see README "IONOS setup" for the fallback plan.
       - name: Run migrations & rebuild caches on the server
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.IONOS_SSH_HOST }}
           port: ${{ secrets.IONOS_SSH_PORT }}
           username: ${{ secrets.IONOS_SSH_USER }}
-          key: ${{ secrets.IONOS_SSH_PRIVATE_KEY }}
+          password: ${{ secrets.IONOS_SSH_PASSWORD }}
           script: |
             cd ${{ secrets.IONOS_TARGET_DIR }}
             php artisan migrate --force
