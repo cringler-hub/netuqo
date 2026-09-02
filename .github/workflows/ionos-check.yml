@@ -13,13 +13,18 @@ jobs:
     steps:
       - name: Check whether .env is publicly reachable right now
         run: |
-          CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://netuqo.com/.env)
-          echo "https://netuqo.com/.env -> HTTP $CODE"
-          if [ "$CODE" = "200" ]; then
-            echo "::error::.env IS PUBLICLY READABLE RIGHT NOW. Fix the document root immediately."
-          else
-            echo "Not publicly readable (got $CODE) — good."
-          fi
+          set +e
+          for url in "http://netuqo.com/.env" "https://netuqo.com/.env"; do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$url")
+            CURL_EXIT=$?
+            if [ "$CURL_EXIT" -ne 0 ]; then
+              echo "$url -> curl error $CURL_EXIT (likely: no TLS yet, or connection refused) — not exposed via this scheme."
+            elif [ "$CODE" = "200" ]; then
+              echo "::error::$url -> HTTP 200 — .ENV IS PUBLICLY READABLE RIGHT NOW. Fix the document root immediately."
+            else
+              echo "$url -> HTTP $CODE — not publicly readable, good."
+            fi
+          done
 
       - name: Inspect deployed app + server error logs
         uses: appleboy/ssh-action@v1.2.0
