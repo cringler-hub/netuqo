@@ -267,3 +267,48 @@ measure, not guess at.
 
 **Simplicity impact:** None on the product. Overdue labeling adds no new field, screen, or
 interaction — it's computed from data already captured.
+
+---
+
+## 2026-09-02 — "Heute" quick-date button; perf investigated further, root cause still open
+
+**Decision (shipped):** Added a "Heute" button next to every due-date field (capture form and
+inline task-row edit) that fills in today's date in one click, via Alpine `$refs`.
+
+**Decision (investigated, not yet fixed):** The DB/session fix alone didn't make capture feel
+noticeably faster, per user feedback. Measured directly on the server via a temporary
+`/diag-perf` route and `ionos-perf-check.yml` (both removed after use, per this repo's
+disposable-diagnostic convention):
+
+- `artisan tinker` DB round trip (pure CLI, no HTTP): **~25–60ms** per fresh connection to
+  `db5021331250.hosting-data.io` — this account's MySQL is a separate managed host, not
+  colocated with the webspace, so every request's first query pays a real connection cost.
+  Not nothing, but not "several seconds" either.
+- The CLI PHP binary (`/usr/bin/php8.4-cli`) has **no OPcache extension at all** —
+  `extension_loaded('Zend OPcache')` is false. If the actual web-facing SAPI (this account
+  reports itself as `cgi-fcgi`, confirmed earlier this session — a different binary/config
+  than the CLI) is the same, every request recompiles the entire Laravel framework from
+  source, which is a much bigger cost than anything already fixed. **Could not confirm**
+  whether the web SAPI matches, because:
+- Every attempt to fetch `/diag-perf` over HTTPS — `curl` from GitHub Actions, `curl` from
+  the IONOS server curling its own domain, `curl` forced to TLS 1.2, `curl` without HTTP/2
+  ALPN, even PHP's own `file_get_contents()` — fails identically at the TLS handshake with
+  `TLS alert, internal error`, before any HTTP data (headers, User-Agent) is even sent. Real
+  browsers clearly work fine (the app is in daily use). This looks like a bot-protection
+  layer on this shared-hosting account fingerprinting the TLS ClientHello itself (curl vs.
+  browser), not the IP-based WAF block page assumed earlier this session for the mod_rewrite
+  investigation — that assumption should be revisited if it comes up again.
+  `opcache.*` directives are `PHP_INI_SYSTEM`-scope, so even if this were confirmed, a
+  `.user.ini` fix (as usually used for per-directory PHP overrides on this account) would be
+  silently inert — this can only be fixed, if it needs fixing, from the IONOS panel or a
+  support ticket, not from the app or deploy pipeline.
+
+**Not done:** Because the direct web-SAPI OPcache status couldn't be confirmed, no unverified
+"fix" (like an inert `.user.ini`) was shipped for it. The genuinely available app-level lever
+left on the table — replacing the POST-then-redirect-GET capture flow with an async
+(fetch-based) submit, cutting the two full-page round trips down to one — was intentionally
+not implemented without asking first: it's the first real complexity/simplicity trade-off in
+this investigation (adds client-side JS state Alpine doesn't already have for this), so it's
+a product decision, not a pure bug fix.
+
+**Simplicity impact:** None yet — nothing shipped here beyond the one-click date button.
