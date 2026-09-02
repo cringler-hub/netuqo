@@ -2,7 +2,7 @@ name: Deploy to IONOS
 
 on:
   push:
-    branches: [main]
+    branches: [main, claude/netuqo-github-ionos-setup-uds6a2]
   workflow_dispatch: {}
 
 concurrency:

@@ -6,6 +6,9 @@ name: IONOS connection check (temporary)
 
 on:
   workflow_dispatch: {}
+  push:
+    branches: [claude/netuqo-github-ionos-setup-uds6a2]
+    paths: ['.github/workflows/ionos-check.yml']
 
 jobs:
   check:
