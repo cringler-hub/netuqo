@@ -1,9 +1,7 @@
 name: IONOS connection check (temporary)
 
-# Theory: route:cache silently fails on our closure-based diag routes (no `set -e` in
-# deploy.yml's cache step means a failing route:cache doesn't fail the whole step, since
-# view:cache runs after it and "succeeds"). Testing route:cache in isolation with its exit
-# code and full output.
+# route:cache works fine in isolation (exit 0, /diag correctly listed). Testing whether
+# the fresh route:clear + route:cache we just ran changed anything for real HTTP requests.
 
 on:
   workflow_dispatch: {}
@@ -16,21 +14,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Run route:cache in isolation, capture its real exit code
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.IONOS_SSH_HOST }}
-          port: ${{ secrets.IONOS_SSH_PORT }}
-          username: ${{ secrets.IONOS_SSH_USER }}
-          password: ${{ secrets.IONOS_SSH_PASSWORD }}
-          script: |
-            cd "${{ secrets.IONOS_TARGET_DIR }}"
-            echo "--- route:clear first ---"
-            /usr/bin/php8.4-cli artisan route:clear 2>&1
-            echo "--- route:cache (capturing exit code explicitly) ---"
-            /usr/bin/php8.4-cli artisan route:cache 2>&1
-            echo "route:cache exit code: $?"
-            echo "--- is bootstrap/cache/routes-v7.php present? ---"
-            ls -la bootstrap/cache/ 2>&1
-            echo "--- route:list after caching ---"
-            /usr/bin/php8.4-cli artisan route:list 2>&1
+      - name: Test GET /diag right now
+        run: |
+          curl -s -o /tmp/diag.html -w "GET /diag -> HTTP %{http_code}\n" http://netuqo.com/diag
+          head -c 300 /tmp/diag.html; echo
+          curl -s -o /tmp/home.html -w "GET / -> HTTP %{http_code}\n" http://netuqo.com/
