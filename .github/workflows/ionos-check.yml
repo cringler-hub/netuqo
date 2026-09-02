@@ -2,6 +2,7 @@ name: IONOS connection check (temporary)
 
 # Testing the documented IONOS-specific .htaccess fix (RewriteBase / + FollowSymLinks)
 # for the mod_rewrite-internal-redirect 500 bug. Delete once confirmed.
+# (re-run after deploy confirmed complete)
 
 on:
   workflow_dispatch: {}
