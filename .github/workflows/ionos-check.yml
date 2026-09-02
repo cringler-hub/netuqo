@@ -4,6 +4,7 @@ name: IONOS connection check (temporary)
 # is excluded from CSRF entirely. If nocsrf works but the other doesn't, it's CSRF/session.
 # If both fail, it's something more fundamental about POST on this server. Delete once
 # resolved, along with the diag routes in routes/web.php and bootstrap/app.php.
+# (re-run after deploy.yml confirmed complete)
 
 on:
   workflow_dispatch: {}
