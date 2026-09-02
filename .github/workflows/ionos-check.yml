@@ -1,7 +1,8 @@
 name: IONOS connection check (temporary)
 
-# route:cache works fine in isolation (exit 0, /diag correctly listed). Testing whether
-# the fresh route:clear + route:cache we just ran changed anything for real HTTP requests.
+# Theory: EVERY non-root path fails (Apache/mod_rewrite/PHP-CGI issue), not just our
+# custom routes. Testing Laravel's own built-in /up health-check route, which has existed
+# since the very first deploy and has zero custom code — the cleanest possible control.
 
 on:
   workflow_dispatch: {}
@@ -14,8 +15,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Test GET /diag right now
+      - name: Test GET / vs GET /up (Laravel's built-in health check, zero custom code)
         run: |
-          curl -s -o /tmp/diag.html -w "GET /diag -> HTTP %{http_code}\n" http://netuqo.com/diag
-          head -c 300 /tmp/diag.html; echo
           curl -s -o /tmp/home.html -w "GET / -> HTTP %{http_code}\n" http://netuqo.com/
+          curl -s -o /tmp/up.html -w "GET /up -> HTTP %{http_code}\n" http://netuqo.com/up
+          head -c 300 /tmp/up.html; echo
