@@ -1,8 +1,9 @@
 name: IONOS connection check (temporary)
 
-# Theory: EVERY non-root path fails (Apache/mod_rewrite/PHP-CGI issue), not just our
-# custom routes. Testing Laravel's own built-in /up health-check route, which has existed
-# since the very first deploy and has zero custom code — the cleanest possible control.
+# CONFIRMED: even Laravel's own zero-code /up route 500s. Only the exact domain root
+# works. This isn't our app — it's a server/rewrite-level issue. Last two checks to
+# pin down the exact mechanism: does a DIRECT (non-rewritten) request to index.php work,
+# and does a genuinely nonexistent path 404 cleanly or also 500?
 
 on:
   workflow_dispatch: {}
@@ -15,8 +16,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Test GET / vs GET /up (Laravel's built-in health check, zero custom code)
+      - name: Direct index.php vs a genuinely nonexistent path
         run: |
-          curl -s -o /tmp/home.html -w "GET / -> HTTP %{http_code}\n" http://netuqo.com/
-          curl -s -o /tmp/up.html -w "GET /up -> HTTP %{http_code}\n" http://netuqo.com/up
-          head -c 300 /tmp/up.html; echo
+          echo "--- GET /index.php directly (bypasses rewrite) ---"
+          curl -s -o /tmp/direct.html -w "HTTP %{http_code}\n" http://netuqo.com/index.php
+          head -c 300 /tmp/direct.html; echo
+          echo "--- GET /this-path-does-not-exist-xyz123 ---"
+          curl -s -o /tmp/none.html -w "HTTP %{http_code}\n" http://netuqo.com/this-path-does-not-exist-xyz123
+          head -c 300 /tmp/none.html; echo
