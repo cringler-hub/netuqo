@@ -59,10 +59,59 @@ class TaskCaptureTest extends TestCase
         $response->assertSessionHasErrors('area');
     }
 
-    public function test_captured_task_appears_on_today(): void
+    public function test_captured_task_without_due_date_appears_on_later(): void
     {
         $this->post('/tasks', ['title' => 'Sarah wegen Budget anrufen']);
 
-        $this->get('/')->assertOk()->assertSee('Sarah wegen Budget anrufen');
+        $this->get('/later')->assertOk()->assertSee('Sarah wegen Budget anrufen');
+    }
+
+    public function test_task_due_today_appears_on_today(): void
+    {
+        $this->post('/tasks', ['title' => 'Angebot prüfen', 'due_at' => now()->format('Y-m-d')]);
+
+        $this->get('/')->assertOk()->assertSee('Angebot prüfen');
+    }
+
+    public function test_overdue_task_appears_on_today(): void
+    {
+        $this->post('/tasks', ['title' => 'Rechnung schreiben', 'due_at' => now()->subDays(2)->format('Y-m-d')]);
+
+        $this->get('/')->assertOk()->assertSee('Rechnung schreiben');
+    }
+
+    public function test_task_due_in_the_future_appears_on_later(): void
+    {
+        $this->post('/tasks', ['title' => 'Reise planen', 'due_at' => now()->addDays(5)->format('Y-m-d')]);
+
+        $this->get('/')->assertOk()->assertDontSee('Reise planen');
+        $this->get('/later')->assertOk()->assertSee('Reise planen');
+    }
+
+    public function test_a_task_can_be_marked_as_done(): void
+    {
+        $this->post('/tasks', ['title' => 'Steuererklärung abschicken', 'due_at' => now()->format('Y-m-d')]);
+        $task = Task::first();
+
+        $response = $this->post(route('tasks.complete', $task));
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('tasks', ['id' => $task->id, 'status' => 'done']);
+        $this->get('/')->assertOk()->assertDontSee('Steuererklärung abschicken');
+        $this->get('/done')->assertOk()->assertSee('Steuererklärung abschicken');
+    }
+
+    public function test_a_done_task_can_be_reopened(): void
+    {
+        $this->post('/tasks', ['title' => 'Termin verschieben', 'due_at' => now()->format('Y-m-d')]);
+        $task = Task::first();
+        $this->post(route('tasks.complete', $task));
+
+        $response = $this->post(route('tasks.reopen', $task));
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('tasks', ['id' => $task->id, 'status' => 'open']);
+        $this->get('/done')->assertOk()->assertDontSee('Termin verschieben');
+        $this->get('/')->assertOk()->assertSee('Termin verschieben');
     }
 }

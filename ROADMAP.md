@@ -32,9 +32,11 @@ Done:
 - CI (tests + lint) and CD (auto-deploy `main` → IONOS) pipeline. Live at netuqo.com.
 - Quick Capture: title (required) + optional Business/Privat + optional due date, wired
   to real `tasks` persistence. See DECISIONS.md for why this ships without login.
+- Complete/Reopen with `activities` logging.
+- Heute / Später / Erledigt as three separate pages, split by due date (today or overdue
+  → Heute; no due date or future → Später) and status (done → Erledigt). See DECISIONS.md.
 
 Next (still Phase 0/1, in small increments — see CLAUDE.md operating model):
-1. Complete/Reopen with `activities` logging.
-2. Erledigt + Suche (work memory search foundation).
-3. Auth (login-only, single user to start) — deliberately deferred, see DECISIONS.md.
-4. Morning Brief email (V0.2).
+1. Suche (work memory search foundation).
+2. Auth (login-only, single user to start) — deliberately deferred, see DECISIONS.md.
+3. Morning Brief email (V0.2).

@@ -177,3 +177,29 @@ panel — unnecessary once the actual documented `.htaccess` fix was found and v
 
 **Simplicity impact:** None on the product. Two lines in a config file Laravel ships by
 default anyway; no application code changed.
+
+---
+
+## 2026-09-02 — Heute/Später/Erledigt split, and Complete/Reopen
+
+**Decision:** Tasks can now be marked done (and reopened) from any list, logged to
+`activities`. The single task list is split into three pages by nav: **Heute** (open tasks
+due today or overdue), **Später** (open tasks with no due date, or due in the future), and
+**Erledigt** (done tasks, newest-completed first). "Einstellungen" is removed from the nav —
+there are no settings to configure yet, and an empty settings page is exactly the kind of
+premature navigation MANIFESTO.md warns against.
+
+**Reason:** User feedback after using Capture live: Heute was showing every open task
+regardless of due date, which defeats its purpose as a daily-focus view; there was no way to
+complete a task at all. The header/nav markup was also duplicated per-page, so it's now
+centralized in `components/layouts/app.blade.php` (parameterized by an `active` prop) and
+task rows are a shared `<x-task-row>` component used by all three pages.
+
+**Rejected alternative:** A single filterable list with client-side tabs — rejected, three
+plain server-rendered pages with real URLs (`/`, `/later`, `/done`) are simpler to build,
+test, and reason about than adding JS-side filtering state, and match the nav-as-navigation
+pattern already established.
+
+**Simplicity impact:** Nav stays at 3 items (Heute/Später/Erledigt), same ceiling
+MANIFESTO.md sets. Removing the unused Einstellungen link reduces surface rather than adding
+to it.
