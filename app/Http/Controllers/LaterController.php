@@ -15,6 +15,7 @@ class LaterController extends Controller
     public function index(Request $request): View
     {
         $area = $request->query('area');
+        $range = in_array($request->query('range'), ['week', 'month', 'later'], true) ? $request->query('range') : null;
 
         $endOfWeek = now()->endOfWeek();
         $endOfMonth = now()->endOfMonth();
@@ -48,6 +49,7 @@ class LaterController extends Controller
             'thisMonth' => $thisMonth,
             'later' => $later,
             'area' => $area,
+            'range' => $range,
         ]);
     }
 }

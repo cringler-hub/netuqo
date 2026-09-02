@@ -487,3 +487,27 @@ of Alpine, no new request/state pattern.
 **Simplicity impact:** None on the product — no new screen, field, or interaction; the
 existing single click still completes a task, just with a moment of visible confirmation
 first.
+
+---
+
+## 2026-09-02 — Diese Woche/Diesen Monat/Später made into a filter bar on Später
+
+**Decision:** Follow-up to the grouped-sections decision above: the three groups are now
+also a clickable filter bar (Alle / Diese Woche / Diesen Monat / Später) at the top of the
+Später page, right above the existing Alle/Business/Privat area filter — same pattern, same
+`?range=` query-param approach as the existing `?area=` filter. Picking a range narrows the
+list to just that group (still server-rendered, real URL, no client-side JS state); "Alle"
+(the default) keeps showing all three grouped sections as before. The two filters combine
+(switching area preserves the active range and vice versa).
+
+**Reason:** User asked to have Diese Woche/Diesen Monat/Später visible "in der oberen
+Leiste" (the top bar), not just as scroll-past section headings.
+
+**Rejected alternative:** Promoting them to top-level nav links (the original 5-item nav
+request) — still rejected per MANIFESTO.md's 3–4-entry cap on main nav; this filter bar lives
+inside the existing Später page, same as the area filter already does, so the header nav
+stays untouched at Heute/Später/Erledigt.
+
+**Simplicity impact:** None on the product's information architecture — reuses the exact
+filter-bar pattern and query-param mechanism already established for `?area=`. One new small
+Blade component (`range-filter`), no new screen, no client-side state.

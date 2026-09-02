@@ -4,12 +4,22 @@
         <p class="mt-1 text-text-muted">Alles, was noch nicht heute dran ist.</p>
     </section>
 
-    <x-area-filter route="later" :area="$area" />
+    <x-range-filter :area="$area" :range="$range" />
+    <x-area-filter route="later" :area="$area" :range="$range" />
 
-    @if ($thisWeek->isEmpty() && $thisMonth->isEmpty() && $later->isEmpty())
+    @php
+        $isEmpty = match ($range) {
+            'week' => $thisWeek->isEmpty(),
+            'month' => $thisMonth->isEmpty(),
+            'later' => $later->isEmpty(),
+            default => $thisWeek->isEmpty() && $thisMonth->isEmpty() && $later->isEmpty(),
+        };
+    @endphp
+
+    @if ($isEmpty)
         <p class="text-text-muted">Nichts für später vorgemerkt.</p>
     @else
-        @if ($thisWeek->isNotEmpty())
+        @if ((! $range || $range === 'week') && $thisWeek->isNotEmpty())
             <section class="mb-8">
                 <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">Diese Woche</h2>
                 <div class="flex flex-col">
@@ -20,7 +30,7 @@
             </section>
         @endif
 
-        @if ($thisMonth->isNotEmpty())
+        @if ((! $range || $range === 'month') && $thisMonth->isNotEmpty())
             <section class="mb-8">
                 <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">Diesen Monat</h2>
                 <div class="flex flex-col">
@@ -31,7 +41,7 @@
             </section>
         @endif
 
-        @if ($later->isNotEmpty())
+        @if ((! $range || $range === 'later') && $later->isNotEmpty())
             <section>
                 <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">Später</h2>
                 <div class="flex flex-col">

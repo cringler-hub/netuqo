@@ -243,7 +243,29 @@ class TaskCaptureTest extends TestCase
         $this->post('/tasks', ['title' => 'Ohne Termin']);
 
         $response = $this->get('/later')->assertOk();
-        $response->assertDontSee('Diese Woche')->assertDontSee('Diesen Monat')->assertSee('Später');
+        $content = $response->getContent();
+
+        // "Diese Woche"/"Diesen Monat" still appear once each as filter tabs, but not as
+        // section headings, since both groups are empty.
+        $this->assertSame(1, substr_count($content, 'Diese Woche'));
+        $this->assertSame(1, substr_count($content, 'Diesen Monat'));
+        $response->assertSee('Später');
+    }
+
+    public function test_later_range_filter_narrows_to_one_group(): void
+    {
+        $this->post('/tasks', ['title' => 'Diese Woche fällig', 'due_at' => now()->endOfWeek()->format('Y-m-d')]);
+        $this->post('/tasks', ['title' => 'Ohne Termin']);
+
+        $this->get('/later?range=week')
+            ->assertOk()
+            ->assertSee('Diese Woche fällig')
+            ->assertDontSee('Ohne Termin');
+
+        $this->get('/later?range=later')
+            ->assertOk()
+            ->assertSee('Ohne Termin')
+            ->assertDontSee('Diese Woche fällig');
     }
 
     public function test_done_task_shows_when_it_was_completed(): void
