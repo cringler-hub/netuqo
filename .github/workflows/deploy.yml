@@ -39,25 +39,40 @@ jobs:
       - name: Build frontend assets
         run: npm run build
 
-      # Everything below `deploy/` is what actually lands on the IONOS webspace.
-      # We ship the whole Laravel app (not just /public) because shared hosting has no
-      # SSH/composer to assemble vendor/ on the server itself. See README "IONOS Setup".
-      - name: Deploy over FTPS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      # We ship the whole Laravel app, including vendor/, because the deploy shouldn't
+      # depend on composer being available/network-reachable on the IONOS side. `storage/`
+      # is excluded on purpose: it holds runtime state (logs, cache, sessions, uploads)
+      # that must survive across deploys, not be overwritten from a fresh checkout.
+      - name: Sync files to IONOS over SSH
+        uses: easingthemes/ssh-deploy@v5
         with:
-          server: ${{ secrets.IONOS_FTP_SERVER }}
-          username: ${{ secrets.IONOS_FTP_USERNAME }}
-          password: ${{ secrets.IONOS_FTP_PASSWORD }}
-          protocol: ftps
-          local-dir: ./
-          server-dir: ${{ secrets.IONOS_FTP_TARGET_DIR }}
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/.github/**
-            **/node_modules/**
-            **/tests/**
-            **/.env
-            **/.env.example
-            **/storage/logs/**
-            **/*.log
+          SSH_PRIVATE_KEY: ${{ secrets.IONOS_SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.IONOS_SSH_HOST }}
+          REMOTE_PORT: ${{ secrets.IONOS_SSH_PORT }}
+          REMOTE_USER: ${{ secrets.IONOS_SSH_USER }}
+          SOURCE: './'
+          TARGET: ${{ secrets.IONOS_TARGET_DIR }}
+          ARGS: '-avzr --delete'
+          EXCLUDE: |
+            /.git/
+            /.github/
+            /node_modules/
+            /tests/
+            /.env
+            /.env.example
+            /storage/
+            /database/*.sqlite
+
+      - name: Run migrations & rebuild caches on the server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.IONOS_SSH_HOST }}
+          port: ${{ secrets.IONOS_SSH_PORT }}
+          username: ${{ secrets.IONOS_SSH_USER }}
+          key: ${{ secrets.IONOS_SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.IONOS_TARGET_DIR }}
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache

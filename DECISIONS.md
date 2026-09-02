@@ -36,3 +36,23 @@ rejected, this is exactly the kind of speculative complexity the architecture ex
 warns against.
 
 **Simplicity impact:** None yet; keeps the schema minimal until it's needed.
+
+---
+
+## 2026-09-02 — Deploy over SSH/rsync, not FTPS
+
+**Decision:** Confirmed the IONOS Webhosting package includes SFTP+SSH (port 22, not just
+plain FTP). Deploy now rsyncs the built app over SSH and runs `php artisan migrate --force`
++ cache rebuilds directly on the server as part of the same CI job, using a dedicated deploy
+keypair rather than a password.
+
+**Reason:** SSH access removes the biggest open question from the initial scaffold (how to
+run the first and all subsequent migrations without shell access). It's also more reliable
+than FTPS for a directory sync (atomic-ish, proper excludes, no protocol quirks).
+
+**Rejected alternative:** Keep the original FTPS workflow and handle migrations manually on
+every release — rejected now that SSH is confirmed available; manual migration steps don't
+scale past the first deploy and are an easy way to forget a schema change in production.
+
+**Simplicity impact:** None on the product; strictly reduces operational risk/toil for the
+person running netuqo.
