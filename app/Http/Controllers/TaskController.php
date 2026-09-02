@@ -26,6 +26,7 @@ class TaskController extends Controller
         abort_unless($task->user_id === $this->currentUser()->id, 403);
 
         $validated = $request->validate([
+            'title' => ['sometimes', 'required', 'string', 'max:255'],
             'due_at' => ['nullable', 'date'],
         ]);
 

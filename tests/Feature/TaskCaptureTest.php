@@ -173,4 +173,27 @@ class TaskCaptureTest extends TestCase
         $this->assertDatabaseMissing('tasks', ['id' => $task->id]);
         $this->get('/')->assertOk()->assertDontSee('Alten Entwurf verwerfen');
     }
+
+    public function test_a_tasks_title_can_be_changed_afterwards(): void
+    {
+        $this->post('/tasks', ['title' => 'Alter Titel', 'due_at' => now()->format('Y-m-d')]);
+        $task = Task::first();
+
+        $response = $this->patch(route('tasks.update', $task), ['title' => 'Neuer Titel']);
+
+        $response->assertRedirect();
+        $this->assertSame('Neuer Titel', $task->fresh()->title);
+        $this->get('/')->assertOk()->assertSee('Neuer Titel')->assertDontSee('Alter Titel');
+    }
+
+    public function test_a_tasks_title_cannot_be_cleared(): void
+    {
+        $this->post('/tasks', ['title' => 'Wichtiger Titel', 'due_at' => now()->format('Y-m-d')]);
+        $task = Task::first();
+
+        $response = $this->patch(route('tasks.update', $task), ['title' => '']);
+
+        $response->assertSessionHasErrors('title');
+        $this->assertSame('Wichtiger Titel', $task->fresh()->title);
+    }
 }

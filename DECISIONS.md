@@ -382,3 +382,20 @@ rejected; the user asked for one font, not a refinement of three.
 
 **Simplicity impact:** Net positive — fewer font files to load, one less inconsistency to
 reason about. `DESIGN.md` is annotated to note this deviation from the original spec.
+
+---
+
+## 2026-09-02 — Task title editable after capture
+
+**Decision:** Click a task's title to edit it inline (same pattern as the due-date edit
+already shipped): a text input replaces the title, saves on Enter or on blur via the
+existing `PATCH /tasks/{task}` route (now also accepting `title`).
+
+**Reason:** User feedback — captured titles had no way to be corrected after the fact
+(typos, more detail added later), unlike the due date which already got this treatment.
+
+**Rejected alternative:** None considered — this is the same interaction pattern already
+established for due dates, just applied to the other editable field.
+
+**Simplicity impact:** None — reuses the existing update endpoint and edit-in-place pattern,
+no new screen or concept.

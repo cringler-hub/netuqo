@@ -14,7 +14,34 @@
             <span class="text-xs">✓</span>
         </button>
     </form>
-    <span class="flex-grow text-base {{ $task->status === 'done' ? 'text-text-muted line-through' : 'text-text' }}">{{ $task->title }}</span>
+    <div class="min-w-0 flex-grow" x-data="{ editingTitle: false }">
+        <button
+            type="button"
+            x-show="!editingTitle"
+            @click="editingTitle = true; $nextTick(() => $refs.titleEdit.focus())"
+            class="block w-full truncate text-left text-base {{ $task->status === 'done' ? 'text-text-muted line-through' : 'text-text hover:text-primary' }}"
+        >{{ $task->title }}</button>
+        <form
+            x-show="editingTitle"
+            x-cloak
+            method="POST"
+            action="{{ route('tasks.update', $task) }}"
+        >
+            @csrf
+            @method('PATCH')
+            <input
+                type="text"
+                name="title"
+                x-ref="titleEdit"
+                value="{{ $task->title }}"
+                required
+                maxlength="255"
+                @keydown.enter.prevent="$refs.titleEdit.form.requestSubmit()"
+                @blur="$refs.titleEdit.form.requestSubmit()"
+                class="w-full rounded border border-border bg-transparent px-1 py-0.5 text-base text-text focus:border-primary focus:outline-none"
+            >
+        </form>
+    </div>
     <div class="flex shrink-0 items-center gap-2 text-xs text-text-muted" x-data="{ editingDate: false }">
         @if ($task->area)
             <span class="rounded-full bg-white/5 px-2 py-0.5 uppercase tracking-wide">{{ $task->area === 'business' ? 'Business' : 'Privat' }}</span>
