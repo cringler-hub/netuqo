@@ -1,0 +1,77 @@
+name: IONOS one-time bootstrap
+
+# Run this ONCE, after the first "Deploy to IONOS" run has created the netuqo/ folder,
+# and before you rely on the app actually serving requests. It is safe to re-run: it
+# never overwrites an existing .env, and directory creation is idempotent.
+#
+# Requires these additional secrets (see README "IONOS setup"):
+#   IONOS_DB_HOST, IONOS_DB_DATABASE, IONOS_DB_USERNAME, IONOS_DB_PASSWORD
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create storage/ tree, and .env if it doesn't exist yet
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          NETUQO_DB_HOST: ${{ secrets.IONOS_DB_HOST }}
+          NETUQO_DB_DATABASE: ${{ secrets.IONOS_DB_DATABASE }}
+          NETUQO_DB_USERNAME: ${{ secrets.IONOS_DB_USERNAME }}
+          NETUQO_DB_PASSWORD: ${{ secrets.IONOS_DB_PASSWORD }}
+        with:
+          host: ${{ secrets.IONOS_SSH_HOST }}
+          port: ${{ secrets.IONOS_SSH_PORT }}
+          username: ${{ secrets.IONOS_SSH_USER }}
+          password: ${{ secrets.IONOS_SSH_PASSWORD }}
+          envs: NETUQO_DB_HOST,NETUQO_DB_DATABASE,NETUQO_DB_USERNAME,NETUQO_DB_PASSWORD
+          script: |
+            set -e
+            cd "${{ secrets.IONOS_TARGET_DIR }}"
+
+            mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/testing storage/framework/views storage/logs storage/app/public storage/app/private bootstrap/cache
+            chmod -R 775 storage bootstrap/cache
+
+            if [ -f .env ]; then
+              echo ".env already exists — leaving it untouched."
+            else
+              echo "Creating .env ..."
+              APP_KEY=$(/usr/bin/php8.4-cli artisan key:generate --show)
+              {
+                echo "APP_NAME=netuqo"
+                echo "APP_ENV=production"
+                printf 'APP_KEY=%s\n' "$APP_KEY"
+                echo "APP_DEBUG=false"
+                echo "APP_URL=https://netuqo.com"
+                echo "APP_TIMEZONE=Europe/Berlin"
+                echo ""
+                echo "APP_LOCALE=de"
+                echo "APP_FALLBACK_LOCALE=en"
+                echo ""
+                echo "LOG_CHANNEL=stack"
+                echo "LOG_LEVEL=error"
+                echo ""
+                echo "DB_CONNECTION=mysql"
+                printf 'DB_HOST=%s\n' "$NETUQO_DB_HOST"
+                echo "DB_PORT=3306"
+                printf 'DB_DATABASE=%s\n' "$NETUQO_DB_DATABASE"
+                printf 'DB_USERNAME=%s\n' "$NETUQO_DB_USERNAME"
+                printf 'DB_PASSWORD=%s\n' "$NETUQO_DB_PASSWORD"
+                echo ""
+                echo "SESSION_DRIVER=database"
+                echo "SESSION_LIFETIME=120"
+                echo "CACHE_STORE=database"
+                echo "QUEUE_CONNECTION=database"
+                echo ""
+                echo "# Morning Brief / mail import aren't built yet (see ROADMAP.md) — revisit"
+                echo "# this once they land."
+                echo "MAIL_MAILER=log"
+                echo 'MAIL_FROM_ADDRESS="hello@netuqo.com"'
+                echo 'MAIL_FROM_NAME="netuqo"'
+              } > .env
+              chmod 600 .env
+              echo ".env created."
+            fi

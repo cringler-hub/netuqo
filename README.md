@@ -34,6 +34,9 @@ Visit `http://localhost:8000`.
   bundle (`composer install --no-dev`, `npm run build`), rsyncs it to the IONOS webspace over
   SSH, then runs `php artisan migrate --force` and rebuilds the config/route/view caches
   directly on the server. Requires the GitHub Secrets listed below.
+- **`.github/workflows/ionos-bootstrap.yml`** — manual, one-time (safe to re-run): creates
+  the server-side `.env` and `storage/` directory tree. Run once as part of initial setup,
+  see below.
 
 ### Required GitHub Secrets
 
@@ -46,72 +49,52 @@ scoped to a `production` environment with a manual-approval rule if you want a s
 | `IONOS_SSH_PORT`           | `22`                                                                    |
 | `IONOS_SSH_USER`           | The SSH username (e.g. `p7622742`).                                    |
 | `IONOS_SSH_PASSWORD`       | The account password. This IONOS webspace has no SSH-key management, so we authenticate with the password instead of a keypair — same as your other GitHub secrets. |
-| `IONOS_TARGET_DIR`         | **Relative** remote path (no leading `/`), e.g. `netuqo` — see step 3. SSH logs in directly into the account's webspace root (`/homepages/.../htdocs`), so an absolute path like `/netuqo` would point outside the account. |
+| `IONOS_TARGET_DIR`         | **Relative** remote path (no leading `/`), e.g. `netuqo` — see step 2. SSH logs in directly into the account's webspace root (`/homepages/.../htdocs`), so an absolute path like `/netuqo` would point outside the account. |
+| `IONOS_DB_HOST`             | MySQL host from the IONOS panel (Databases). Only used by `ionos-bootstrap.yml`. |
+| `IONOS_DB_DATABASE`         | MySQL database name. |
+| `IONOS_DB_USERNAME`         | MySQL username. |
+| `IONOS_DB_PASSWORD`         | MySQL password. |
 
-## IONOS setup (one-time, manual)
+`.github/workflows/ionos-bootstrap.yml` is a **one-time setup workflow**, separate from the
+regular deploy — see the sequence below. It creates the server-side `.env` (using the
+`IONOS_DB_*` secrets and a freshly generated `APP_KEY`, only if `.env` doesn't already exist
+— safe to re-run) and the `storage/`/`bootstrap/cache` directories the regular deploy
+intentionally never touches, since those hold runtime state that must survive across
+deploys.
 
-GitHub Actions can push code automatically, but it cannot provision hosting, databases, or
-DNS for you. These steps happen once, by hand.
+## IONOS setup
 
-1. **PHP version — confirmed.** The account runs PHP 8.4. Note that bare `php` over SSH
-   resolves to an ancient PHP 4.4 CGI fallback — the real PHP 8.4 CLI binary on this account
-   is `/usr/bin/php8.4-cli`, which is what `deploy.yml` calls explicitly. If you ever run
-   artisan commands by hand over SSH, use that full path, not `php`.
+GitHub Actions can push code and configure the server for you here — this account has real
+SSH access, confirmed via a temporary diagnostic run (removed once it answered the open
+questions, see `DECISIONS.md`). What's left needs a few clicks in the IONOS panel and, in
+order, three GitHub Actions runs. No local install, no terminal needed on your side.
 
-2. **Create the MySQL database.** IONOS panel → Databases → create a new MySQL database +
-   user. Note the host, database name, username, password — you'll need them for the
-   server's `.env` (step 5).
+1. **Create the MySQL database**, if not already done. IONOS panel → Databases → create a
+   new MySQL database + user, then set the four `IONOS_DB_*` secrets above from it.
 
-3. **Point the domain at the right folder.** This webspace hosts multiple domains, one
-   top-level folder each (`leadscout/`, `messefeedback/`, ...) — same pattern applies to
-   netuqo. `netuqo.com` must serve the app's `public/` folder as the webroot, never the app
-   root (that would expose `.env`, `app/`, etc.):
-   - The `netuqo/` folder gets created automatically by the first deploy (rsync creates
-     missing target directories), as a sibling of `leadscout/`, `messefeedback/`, `logs/`.
-   - In the IONOS panel under **Domains & SSL → netuqo.com**, set the domain's starting
-     directory/document root to `netuqo/public`.
-   - `IONOS_TARGET_DIR` (the GitHub secret) is `netuqo` — relative, no leading slash (see
-     the secrets table above for why).
+2. **Run "Deploy to IONOS" once** (Actions tab → select it → Run workflow, branch `main`
+   once merged, or this branch for now). This syncs the app and creates the `netuqo/`
+   folder as a sibling of `leadscout/`, `messefeedback/`, `logs/`. **The migrate step will
+   fail** on this first run — expected, `.env` doesn't exist yet — the file sync itself
+   still succeeds.
 
-4. **Enable HTTPS.** Activate the free SSL/TLS certificate (Let's Encrypt) IONOS offers for
+3. **Run "IONOS one-time bootstrap" once** (same place). It creates `.env` (production
+   config + your DB credentials + a fresh `APP_KEY`) and the `storage/` directory tree with
+   correct permissions, directly on the server.
+
+4. **Point the domain at `netuqo/public`.** In the IONOS panel under **Domains & SSL →
+   netuqo.com**, set the domain's starting directory/document root to `netuqo/public` — now
+   that the folder exists. Never point it at the app root (`netuqo/`), that would expose
+   `.env`, `app/`, etc.
+
+5. **Enable HTTPS.** Activate the free SSL/TLS certificate (Let's Encrypt) IONOS offers for
    the domain, and force HTTPS.
 
-5. **Create the server-side `.env` file — once, by hand.** `.env` is intentionally never
-   committed or deployed by CI (it holds secrets, and the deploy step excludes it). Connect
-   over SFTP/SSH and create `.env` directly in `IONOS_TARGET_DIR` (next to `artisan`), based
-   on `.env.example`, with:
-   - `APP_ENV=production`, `APP_DEBUG=false`
-   - `APP_URL=https://netuqo.com`
-   - `APP_KEY=` — generate locally with `php artisan key:generate --show` and paste the
-     value in (don't run `key:generate` on the server).
-   - `DB_CONNECTION=mysql` + the host/database/username/password from step 2.
-   - `MAIL_*` — use the SMTP credentials of a mailbox on your IONOS package, since
-     `netuqo.com` will eventually need to send the Morning Brief.
+6. **Run "Deploy to IONOS" again** (or just push to `main` from now on). This time `.env`
+   exists, so `php8.4-cli artisan migrate --force` succeeds against the real database and
+   caches get rebuilt. Visit `https://netuqo.com` to confirm.
 
-   Then, once the folder exists (after the first deploy, step 7), create the runtime
-   directories the deploy intentionally never touches (see the workflow's `EXCLUDE` list)
-   and make them writable — over SSH:
-
-   ```bash
-   cd netuqo
-   mkdir -p storage/framework/{cache/data,sessions,testing,views} storage/logs storage/app/public storage/app/private bootstrap/cache
-   chmod -R 775 storage bootstrap/cache
-   ```
-
-6. **Shell access — confirmed working.** Verified via a temporary diagnostic workflow:
-   real command execution over SSH works on this account (not SFTP-only), and so does
-   `rsync` on the server side. `deploy.yml`'s migrate/cache-rebuild step relies on this.
-
-7. **First deploy.** Push to `main` (or run the workflow manually via **Actions → Deploy to
-   IONOS → Run workflow**) once secrets are set and the domain's document root (step 3) is
-   configured. Watch the Actions log — the workflow syncs files, creating `netuqo/` if it
-   doesn't exist yet, then runs `php artisan migrate --force` on the server. **Before this
-   first run**, create the server-side `.env` (step 5's first half) so migrate has a
-   database to connect to — the `storage/` directories in step 5's second half only need to
-   exist by the time the app actually serves a request, so right after this first deploy is
-   fine.
-
-8. **Cron for the scheduler (later phase).** Once Morning Brief / mail import land, add a
+7. **Cron for the scheduler (later phase).** Once Morning Brief / mail import land, add a
    cron job in the IONOS panel calling `/usr/bin/php8.4-cli /path/to/app/artisan
    schedule:run` — check the minimum interval your package allows (often 5–15 minutes on
    shared hosting, not the 1-minute interval Laravel recommends); not needed for the current
