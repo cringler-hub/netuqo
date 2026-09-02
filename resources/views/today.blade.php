@@ -1,7 +1,7 @@
 <x-layouts.app :title="'netuqo · Heute'" active="today">
     <section class="mb-10">
-        <h1 class="font-heading text-3xl font-semibold tracking-tight text-text">Guten Morgen.</h1>
-        <p class="mt-1 text-text-muted">Hier ist, was heute wichtig ist.</p>
+        <h1 class="text-3xl font-semibold tracking-tight text-text">Heute.</h1>
+        <p class="mt-1 text-text-muted">Was ist wichtig.</p>
     </section>
 
     <section class="mb-10">
@@ -16,7 +16,7 @@
                     placeholder="Was möchtest du festhalten?"
                     class="w-full border-none bg-transparent p-0 text-base text-text placeholder:text-text-muted focus:outline-none focus:ring-0"
                 >
-                <div class="mt-3 flex flex-wrap items-center gap-2 font-mono text-xs uppercase tracking-wide">
+                <div class="mt-3 flex flex-wrap items-center gap-2 text-xs uppercase tracking-wide">
                     <input
                         type="date"
                         name="due_at"
@@ -43,7 +43,7 @@
                     >Privat</button>
                     <button
                         type="submit"
-                        class="btn-gradient ml-auto rounded px-4 py-1.5 font-sans text-sm normal-case tracking-normal text-white"
+                        class="btn-gradient ml-auto rounded px-4 py-1.5 text-sm normal-case tracking-normal text-white"
                     >Hinzufügen</button>
                 </div>
             </div>

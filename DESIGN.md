@@ -5,7 +5,9 @@ from the Whitepaper — see DECISIONS.md for why. `resources/css/app.css`'s `@th
 the token implementation; keep it in sync with this file if either changes. No 12-column grid
 or sidebar navigation from this spec applies here — netuqo stays a single, calm column
 (`max-w-2xl`), so only the color/type/shape/component language below was adopted, not the
-layout system.
+layout system. **Typography deviates from the spec below**: the three-typeface system
+(Hanken Grotesk / Manrope / JetBrains Mono) read as visually inconsistent in practice — the
+app now uses a single family, Manrope, everywhere. See DECISIONS.md.
 
 ---
 name: Premium Noir

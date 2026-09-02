@@ -361,3 +361,24 @@ without the source vector risked a botched edit. Text stays legible and on-brand
 — rejected as a visible regression, not a style choice.
 
 **Simplicity impact:** None — same header layout, one added `<img>`.
+
+---
+
+## 2026-09-02 — Unified on one typeface; "Heute" heading made time-of-day-independent
+
+**Decision:** Dropped Hanken Grotesk and JetBrains Mono; the whole app now uses Manrope
+everywhere (headings, body, chips, dates). Chips/labels/dates keep their distinct look via
+`uppercase tracking-wide text-xs`, just without a separate font family. Also: the Heute
+page's greeting "Guten Morgen. / Hier ist, was heute wichtig ist." is replaced with "Heute. /
+Was ist wichtig." — matching the plain-noun-plus-period heading style already used on
+Später/Erledigt.
+
+**Reason:** User feedback: three typefaces read as inconsistent in practice, not "premium."
+Separately: a morning greeting is wrong for anyone opening netuqo in the afternoon or
+evening — the whole point of Heute is to be right regardless of time of day.
+
+**Rejected alternative:** Keeping the multi-typeface system with better weight/size tuning —
+rejected; the user asked for one font, not a refinement of three.
+
+**Simplicity impact:** Net positive — fewer font files to load, one less inconsistency to
+reason about. `DESIGN.md` is annotated to note this deviation from the original spec.

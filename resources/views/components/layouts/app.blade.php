@@ -14,7 +14,7 @@
             <div class="mx-auto flex max-w-2xl items-center justify-between px-6 py-4">
                 <a href="{{ route('today') }}" class="flex items-center gap-2">
                     <img src="{{ asset('images/logo-icon.png') }}" alt="" class="h-6 w-auto">
-                    <span class="brand-gradient-text font-heading text-lg font-bold tracking-tight">netuqo</span>
+                    <span class="brand-gradient-text text-lg font-bold tracking-tight">netuqo</span>
                 </a>
                 <nav class="flex items-center gap-6 text-sm">
                     <a href="{{ route('today') }}" class="{{ ($active ?? '') === 'today' ? 'font-semibold text-text' : 'text-text-muted hover:text-text' }}">Heute</a>

@@ -1,6 +1,6 @@
 @props(['route', 'area'])
 
-<div class="mb-6 flex items-center gap-2 font-mono text-xs uppercase tracking-wide">
+<div class="mb-6 flex items-center gap-2 text-xs uppercase tracking-wide">
     <a
         href="{{ route($route) }}"
         class="rounded-full border px-3 py-1 transition-colors {{ ! $area ? 'border-primary bg-primary/10 text-primary' : 'border-border text-text-muted hover:text-text' }}"

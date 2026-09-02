@@ -14,8 +14,8 @@
             <span class="text-xs">✓</span>
         </button>
     </form>
-    <span class="flex-grow font-sans text-base {{ $task->status === 'done' ? 'text-text-muted line-through' : 'text-text' }}">{{ $task->title }}</span>
-    <div class="flex shrink-0 items-center gap-2 font-mono text-xs text-text-muted" x-data="{ editingDate: false }">
+    <span class="flex-grow text-base {{ $task->status === 'done' ? 'text-text-muted line-through' : 'text-text' }}">{{ $task->title }}</span>
+    <div class="flex shrink-0 items-center gap-2 text-xs text-text-muted" x-data="{ editingDate: false }">
         @if ($task->area)
             <span class="rounded-full bg-white/5 px-2 py-0.5 uppercase tracking-wide">{{ $task->area === 'business' ? 'Business' : 'Privat' }}</span>
         @endif
@@ -42,7 +42,7 @@
                 x-ref="dueAtEdit"
                 value="{{ $task->due_at?->format('Y-m-d') }}"
                 onchange="this.form.submit()"
-                class="rounded border border-border bg-transparent px-2 py-0.5 font-mono text-xs text-text focus:border-primary focus:outline-none"
+                class="rounded border border-border bg-transparent px-2 py-0.5 text-xs text-text focus:border-primary focus:outline-none"
             >
             <button
                 type="button"
