@@ -147,4 +147,16 @@ class TaskCaptureTest extends TestCase
         $this->get('/?area=private')->assertOk()->assertSee('Geschenk kaufen')->assertDontSee('Angebot senden');
         $this->get('/')->assertOk()->assertSee('Angebot senden')->assertSee('Geschenk kaufen');
     }
+
+    public function test_a_task_can_be_deleted(): void
+    {
+        $this->post('/tasks', ['title' => 'Alten Entwurf verwerfen', 'due_at' => now()->format('Y-m-d')]);
+        $task = Task::first();
+
+        $response = $this->delete(route('tasks.destroy', $task));
+
+        $response->assertRedirect();
+        $this->assertDatabaseMissing('tasks', ['id' => $task->id]);
+        $this->get('/')->assertOk()->assertDontSee('Alten Entwurf verwerfen');
+    }
 }

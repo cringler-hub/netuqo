@@ -223,3 +223,20 @@ state in the URL (shareable/bookmarkable, survives a reload) with no added JS st
 
 **Simplicity impact:** No new screen, no new required field. The filter is off by default
 (plain "Alle") so it doesn't add a decision to the default path.
+
+---
+
+## 2026-09-02 — Delete a task
+
+**Decision:** Each task row gets a small trash icon (`DELETE /tasks/{task}`), guarded by a
+native browser confirm dialog. Deleting a task cascades to its `activities` rows (existing
+FK `cascadeOnDelete`) — no orphaned audit rows.
+
+**Reason:** User feedback: some captured tasks are simply wrong/duplicate and shouldn't be
+kept around as "done" just to get them off the list.
+
+**Rejected alternative:** A custom confirm modal — rejected, the native `confirm()` dialog
+is one line, needs no new component, and is enough friction to prevent a mis-click.
+
+**Simplicity impact:** None on the default path (capture/complete); adds one icon per row,
+consistent with "complete a task = 1 click."

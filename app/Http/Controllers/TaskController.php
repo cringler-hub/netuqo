@@ -53,4 +53,13 @@ class TaskController extends Controller
 
         return redirect()->back();
     }
+
+    public function destroy(Task $task): RedirectResponse
+    {
+        abort_unless($task->user_id === $this->currentUser()->id, 403);
+
+        $task->delete();
+
+        return redirect()->back();
+    }
 }
