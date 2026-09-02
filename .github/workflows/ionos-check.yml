@@ -1,7 +1,8 @@
 name: IONOS connection check (temporary)
 
-# Diagnoses the 500 on POST /tasks: tails the real Laravel log on the server.
-# Delete once resolved.
+# The 500 on POST /tasks never reached storage/logs/laravel.log — meaning it crashes
+# before Laravel's own exception handler runs. Reproducing directly + checking PHP's own
+# error log + route registration. Delete once resolved.
 
 on:
   workflow_dispatch: {}
@@ -11,7 +12,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Tail Laravel's own log + reproduce the POST from the runner
+      - name: Reproduce the POST from the runner (full response)
+        run: |
+          echo "--- GET / first, to capture a session cookie + CSRF token ---"
+          curl -s -c /tmp/cookies.txt -o /tmp/home.html -w "GET / -> HTTP %{http_code}\n" http://netuqo.com/
+          TOKEN=$(grep -oP 'name="_token" value="\K[^"]+' /tmp/home.html || true)
+          echo "csrf token found: ${TOKEN:0:8}..."
+          echo "--- POST /tasks with that token ---"
+          curl -s -b /tmp/cookies.txt -o /tmp/post.html -w "POST /tasks -> HTTP %{http_code}\n" \
+            -d "title=Diagnostic+Test+Task" -d "_token=${TOKEN}" http://netuqo.com/tasks
+          echo "--- first 100 lines of the response body ---"
+          head -n 100 /tmp/post.html
+
+      - name: Check route registration + PHP's own error log on the server
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.IONOS_SSH_HOST }}
@@ -19,10 +32,18 @@ jobs:
           username: ${{ secrets.IONOS_SSH_USER }}
           password: ${{ secrets.IONOS_SSH_PASSWORD }}
           script: |
-            echo "--- storage/logs/ contents ---"
-            ls -la "${{ secrets.IONOS_TARGET_DIR }}/storage/logs"
-            echo "--- tail of laravel.log ---"
-            tail -n 150 "${{ secrets.IONOS_TARGET_DIR }}/storage/logs/laravel.log" 2>&1 || echo "no laravel.log"
-            echo "--- php8.4-cli artisan about (sanity check) ---"
             cd "${{ secrets.IONOS_TARGET_DIR }}"
-            /usr/bin/php8.4-cli artisan about 2>&1 | head -40
+            echo "--- registered routes ---"
+            /usr/bin/php8.4-cli artisan route:list 2>&1
+            echo "--- php.ini error_log setting ---"
+            /usr/bin/php8.4-cli -i 2>&1 | grep -i "error_log\|display_errors\|log_errors " || true
+            echo "--- tail of that error_log file, if set and readable ---"
+            ERRLOG=$(/usr/bin/php8.4-cli -i 2>&1 | grep -i "^error_log" | awk -F'=> ' '{print $2}' | head -1)
+            echo "error_log path: $ERRLOG"
+            if [ -n "$ERRLOG" ] && [ -f "$ERRLOG" ]; then
+              tail -n 80 "$ERRLOG"
+            else
+              echo "not set to a readable file (goes to Apache's own log we can't see, or stderr)"
+            fi
+            echo "--- storage/logs/laravel.log tail again (post-repro) ---"
+            tail -n 40 storage/logs/laravel.log 2>&1 || echo "no laravel.log"
