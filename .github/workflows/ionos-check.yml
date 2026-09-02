@@ -1,8 +1,9 @@
 name: IONOS connection check (temporary)
 
-# GET /diag (brand new route, trivial closure + view) fails with the same 500 as POST
-# /tasks — so this isn't CSRF/POST-specific after all. Checking whether GET / still
-# works, and what Laravel's own log says now.
+# Theory: route:cache silently fails on our closure-based diag routes (no `set -e` in
+# deploy.yml's cache step means a failing route:cache doesn't fail the whole step, since
+# view:cache runs after it and "succeeds"). Testing route:cache in isolation with its exit
+# code and full output.
 
 on:
   workflow_dispatch: {}
@@ -15,15 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Compare GET / vs GET /diag, then check the Laravel log
-        run: |
-          echo "--- GET / (known-good Today page) ---"
-          curl -s -o /tmp/home.html -w "HTTP %{http_code}\n" http://netuqo.com/
-          echo "--- GET /diag (new route) ---"
-          curl -s -o /tmp/diag.html -w "HTTP %{http_code}\n" http://netuqo.com/diag
-          head -c 300 /tmp/diag.html; echo
-
-      - name: Tail Laravel log + list compiled views on the server
+      - name: Run route:cache in isolation, capture its real exit code
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.IONOS_SSH_HOST }}
@@ -32,11 +25,12 @@ jobs:
           password: ${{ secrets.IONOS_SSH_PASSWORD }}
           script: |
             cd "${{ secrets.IONOS_TARGET_DIR }}"
-            echo "--- resources/views/diag.blade.php present? ---"
-            ls -la resources/views/diag.blade.php 2>&1 || echo "MISSING"
-            echo "--- storage/framework/views (compiled cache) ---"
-            ls -la storage/framework/views | head -20
-            echo "--- tail of laravel.log ---"
-            tail -n 60 storage/logs/laravel.log 2>&1 || echo "no laravel.log"
-            echo "--- try rendering the diag view directly via CLI ---"
-            /usr/bin/php8.4-cli artisan tinker --execute="echo view('diag')->render();" 2>&1 | head -40
+            echo "--- route:clear first ---"
+            /usr/bin/php8.4-cli artisan route:clear 2>&1
+            echo "--- route:cache (capturing exit code explicitly) ---"
+            /usr/bin/php8.4-cli artisan route:cache 2>&1
+            echo "route:cache exit code: $?"
+            echo "--- is bootstrap/cache/routes-v7.php present? ---"
+            ls -la bootstrap/cache/ 2>&1
+            echo "--- route:list after caching ---"
+            /usr/bin/php8.4-cli artisan route:list 2>&1
