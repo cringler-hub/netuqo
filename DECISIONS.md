@@ -415,3 +415,23 @@ category, or captured without one, had no way to be corrected.
 due date, applied to the third and last editable field.
 
 **Simplicity impact:** None — no new screen or concept, reuses the existing update endpoint.
+
+---
+
+## 2026-09-02 — Fixed: task titles collapsing to 1-2 characters on mobile
+
+**Bug:** On narrow viewports (~390px), a task row's title shrank to almost nothing (e.g.
+"Angebot Müller freigeben" rendered as just "A.") because the area/date chips and delete
+icon kept their full width and squeezed the flexible title container down. Found via a
+live screenshot review at the user's request, not reported directly.
+
+**Fix:** Checkbox + title + delete icon are now a non-wrapping inner flex row (so the title
+still shrinks/truncates correctly against a delete icon that stays put); the
+area/date-chip metadata is a separate flex item that goes full-width — and therefore wraps
+onto its own line — only below the `sm` breakpoint, indented to align under the title. On
+`sm`+ the layout is byte-for-byte what it was before (single row, metadata inline). The
+delete button had to be duplicated (one inside the non-wrapping row, one outside) with
+responsive `sm:hidden` / `hidden sm:block` visibility, rather than reflowed with CSS alone,
+since Tailwind has no "same element, different position depending on breakpoint" primitive.
+
+**Simplicity impact:** None on the product — purely a layout fix, no behavior change.
