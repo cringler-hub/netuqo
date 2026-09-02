@@ -1,8 +1,7 @@
 name: IONOS connection check (temporary)
 
-# leadscout/messefeedback work fine on this same webspace, so mod_rewrite isn't broken
-# account-wide. Read-only inspection of their setup (docroot depth, .htaccess, PHP version
-# markers) to find what's different from our config. Nothing is modified.
+# Testing the documented IONOS-specific .htaccess fix (RewriteBase / + FollowSymLinks)
+# for the mod_rewrite-internal-redirect 500 bug. Delete once confirmed.
 
 on:
   workflow_dispatch: {}
@@ -15,23 +14,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Inspect sibling projects' setup (read-only)
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.IONOS_SSH_HOST }}
-          port: ${{ secrets.IONOS_SSH_PORT }}
-          username: ${{ secrets.IONOS_SSH_USER }}
-          password: ${{ secrets.IONOS_SSH_PASSWORD }}
-          script: |
-            echo "--- leadscout/ top level ---"
-            ls -la ~/leadscout 2>&1 | head -30
-            echo "--- leadscout/.htaccess (if any) ---"
-            find ~/leadscout -maxdepth 3 -iname ".htaccess" -exec echo {} \; -exec cat {} \; 2>&1
-            echo "--- messefeedback/ top level ---"
-            ls -la ~/messefeedback 2>&1 | head -30
-            echo "--- messefeedback/.htaccess (if any) ---"
-            find ~/messefeedback -maxdepth 3 -iname ".htaccess" -exec echo {} \; -exec cat {} \; 2>&1
-            echo "--- any .user.ini anywhere in webspace root? ---"
-            find ~ -maxdepth 3 -iname ".user.ini" 2>&1
-            echo "--- apache/httpd version + loaded modules, if visible ---"
-            /usr/bin/php8.4-cli -i 2>&1 | grep -i "server api\|apache" | head -10
+      - name: Test GET / and GET /up after the .htaccess fix
+        run: |
+          curl -s -o /tmp/home.html -w "GET / -> HTTP %{http_code}\n" http://netuqo.com/
+          curl -s -o /tmp/up.html -w "GET /up -> HTTP %{http_code}\n" http://netuqo.com/up
+          head -c 300 /tmp/up.html; echo

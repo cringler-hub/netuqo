@@ -3,6 +3,13 @@
         Options -MultiViews -Indexes
     </IfModule>
 
+    # IONOS shared hosting: internally-rewritten requests to index.php fail with a raw
+    # 500 without these two directives (RewriteBase pins the rewrite to the actual
+    # document root; FollowSymLinks is required for the rewrite engine to process
+    # requests at all on some IONOS vhost configs). See DECISIONS.md for the diagnosis.
+    Options +FollowSymLinks
+    RewriteBase /
+
     RewriteEngine On
 
     # Handle Authorization Header
