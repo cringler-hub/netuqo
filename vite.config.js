@@ -9,8 +9,14 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.js'],
             refresh: true,
             fonts: [
-                bunny('Inter', {
-                    weights: [400, 500, 600],
+                bunny('Hanken Grotesk', {
+                    weights: [600, 700],
+                }),
+                bunny('Manrope', {
+                    weights: [400, 600],
+                }),
+                bunny('JetBrains Mono', {
+                    weights: [500],
                 }),
             ],
         }),

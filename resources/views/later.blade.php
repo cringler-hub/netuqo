@@ -1,6 +1,6 @@
 <x-layouts.app :title="'netuqo · Später'" active="later">
     <section class="mb-10">
-        <h1 class="text-3xl font-light tracking-tight">Später.</h1>
+        <h1 class="font-heading text-3xl font-semibold tracking-tight text-text">Später.</h1>
         <p class="mt-1 text-text-muted">Alles, was noch nicht heute dran ist.</p>
     </section>
 

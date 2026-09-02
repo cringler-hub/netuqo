@@ -312,3 +312,35 @@ this investigation (adds client-side JS state Alpine doesn't already have for th
 a product decision, not a pure bug fix.
 
 **Simplicity impact:** None yet — nothing shipped here beyond the one-click date button.
+
+---
+
+## 2026-09-02 — Adopted "Premium Noir" design system, replacing the Whitepaper's light palette
+
+**Decision:** Replaced the original light/warm design tokens (`app.css`'s former "Light, warm,
+calm surface. Never technical-cold.") with the "Premium Noir" system: dark obsidian surfaces
+(`#0b1326` background), a violet-to-blue accent gradient (`#8b5cf6` → `#3b82f6`) for primary
+actions, three typefaces (Hanken Grotesk for headings, Manrope for body, JetBrains Mono for
+chips/labels/dates), sharper shapes, hairline borders, and a subtle hover glow on primary
+buttons. Full spec now lives in `DESIGN.md`; `resources/css/app.css`'s `@theme` block is the
+implementation.
+
+**Reason:** Explicit user direction, given as a full design spec + new logo/wordmark. User
+chose full adoption over an adapted/reduced version when asked.
+
+**Rejected alternative:** An adapted, reduced version keeping one typeface and skipping
+glow/blur effects — offered as the recommended option (closer to MANIFESTO's simplicity
+default) but not chosen; the user wanted the complete system.
+
+**Explicitly not adopted:** The spec's 12-column grid and sidebar-navigation guidance —
+netuqo has three screens and stays a single `max-w-2xl` column, so a grid system has nothing
+to apply to here. Adopting a visual token language doesn't require also inventing a page
+layout the product doesn't need.
+
+**Open:** The new logo/wordmark image was shared only as an inline chat preview, not as a
+file, so the header still uses a styled text wordmark (`brand-gradient-text` in `app.css`)
+instead of the actual mark. Swap it in once the asset file is provided.
+
+**Simplicity impact:** Net neutral to slightly negative on raw simplicity (three font
+families instead of one, added glow/gradient CSS) — an explicit trade the user made for
+brand identity. No change to information architecture, required fields, or click counts.

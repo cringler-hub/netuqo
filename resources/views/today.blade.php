@@ -1,6 +1,6 @@
 <x-layouts.app :title="'netuqo · Heute'" active="today">
     <section class="mb-10">
-        <h1 class="text-3xl font-light tracking-tight">Guten Morgen.</h1>
+        <h1 class="font-heading text-3xl font-semibold tracking-tight text-text">Guten Morgen.</h1>
         <p class="mt-1 text-text-muted">Hier ist, was heute wichtig ist.</p>
     </section>
 
@@ -14,9 +14,9 @@
                     required
                     autocomplete="off"
                     placeholder="Was möchtest du festhalten?"
-                    class="w-full border-none bg-transparent p-0 text-base placeholder:text-text-muted focus:outline-none focus:ring-0"
+                    class="w-full border-none bg-transparent p-0 text-base text-text placeholder:text-text-muted focus:outline-none focus:ring-0"
                 >
-                <div class="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                <div class="mt-3 flex flex-wrap items-center gap-2 font-mono text-xs uppercase tracking-wide">
                     <input
                         type="date"
                         name="due_at"
@@ -32,24 +32,24 @@
                     <button
                         type="button"
                         @click="area = area === 'business' ? '' : 'business'"
-                        :class="area === 'business' ? 'border-primary text-primary' : 'border-border text-text-muted'"
+                        :class="area === 'business' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-text-muted'"
                         class="rounded-full border px-3 py-1 transition-colors"
                     >Business</button>
                     <button
                         type="button"
                         @click="area = area === 'private' ? '' : 'private'"
-                        :class="area === 'private' ? 'border-primary text-primary' : 'border-border text-text-muted'"
+                        :class="area === 'private' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-text-muted'"
                         class="rounded-full border px-3 py-1 transition-colors"
                     >Privat</button>
                     <button
                         type="submit"
-                        class="ml-auto rounded-full bg-primary px-4 py-1.5 text-white transition-colors hover:bg-primary-hover"
+                        class="btn-gradient ml-auto rounded px-4 py-1.5 font-sans text-sm normal-case tracking-normal text-white"
                     >Hinzufügen</button>
                 </div>
             </div>
         </form>
         @error('title')
-            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+            <p class="mt-2 text-sm text-danger">{{ $message }}</p>
         @enderror
     </section>
 

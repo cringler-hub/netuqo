@@ -9,14 +9,14 @@
         @fonts
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="min-h-screen bg-background text-text antialiased">
-        <header class="border-b border-border">
+    <body class="min-h-screen bg-background font-sans text-text antialiased">
+        <header class="border-b border-border bg-surface-elevated">
             <div class="mx-auto flex max-w-2xl items-center justify-between px-6 py-4">
-                <span class="text-lg font-semibold tracking-tight">netuqo</span>
-                <nav class="flex items-center gap-6 text-sm text-text-muted">
-                    <a href="{{ route('today') }}" class="{{ ($active ?? '') === 'today' ? 'font-medium text-primary' : 'hover:text-text' }}">Heute</a>
-                    <a href="{{ route('later') }}" class="{{ ($active ?? '') === 'later' ? 'font-medium text-primary' : 'hover:text-text' }}">Später</a>
-                    <a href="{{ route('done') }}" class="{{ ($active ?? '') === 'done' ? 'font-medium text-primary' : 'hover:text-text' }}">Erledigt</a>
+                <span class="brand-gradient-text font-heading text-lg font-bold tracking-tight">netuqo</span>
+                <nav class="flex items-center gap-6 text-sm">
+                    <a href="{{ route('today') }}" class="{{ ($active ?? '') === 'today' ? 'font-semibold text-text' : 'text-text-muted hover:text-text' }}">Heute</a>
+                    <a href="{{ route('later') }}" class="{{ ($active ?? '') === 'later' ? 'font-semibold text-text' : 'text-text-muted hover:text-text' }}">Später</a>
+                    <a href="{{ route('done') }}" class="{{ ($active ?? '') === 'done' ? 'font-semibold text-text' : 'text-text-muted hover:text-text' }}">Erledigt</a>
                 </nav>
             </div>
         </header>
