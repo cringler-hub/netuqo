@@ -6,11 +6,40 @@
 
     <x-area-filter route="later" :area="$area" />
 
-    <section class="flex flex-col">
-        @forelse ($tasks as $task)
-            <x-task-row :task="$task" />
-        @empty
-            <p class="text-text-muted">Nichts für später vorgemerkt.</p>
-        @endforelse
-    </section>
+    @if ($thisWeek->isEmpty() && $thisMonth->isEmpty() && $later->isEmpty())
+        <p class="text-text-muted">Nichts für später vorgemerkt.</p>
+    @else
+        @if ($thisWeek->isNotEmpty())
+            <section class="mb-8">
+                <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">Diese Woche</h2>
+                <div class="flex flex-col">
+                    @foreach ($thisWeek as $task)
+                        <x-task-row :task="$task" />
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        @if ($thisMonth->isNotEmpty())
+            <section class="mb-8">
+                <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">Diesen Monat</h2>
+                <div class="flex flex-col">
+                    @foreach ($thisMonth as $task)
+                        <x-task-row :task="$task" />
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        @if ($later->isNotEmpty())
+            <section>
+                <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">Später</h2>
+                <div class="flex flex-col">
+                    @foreach ($later as $task)
+                        <x-task-row :task="$task" />
+                    @endforeach
+                </div>
+            </section>
+        @endif
+    @endif
 </x-layouts.app>

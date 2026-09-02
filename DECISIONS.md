@@ -435,3 +435,31 @@ responsive `sm:hidden` / `hidden sm:block` visibility, rather than reflowed with
 since Tailwind has no "same element, different position depending on breakpoint" primitive.
 
 **Simplicity impact:** None on the product — purely a layout fix, no behavior change.
+
+---
+
+## 2026-09-02 — Später grouped into Diese Woche/Diesen Monat/Später; Erledigt shows completion date
+
+**Decision:** User asked for a 5-item nav (Heute, Diese Woche, Diesen Monat, Später,
+Erledigt). Instead, the existing **Später** page now groups its list under three headings —
+Diese Woche (through end of this calendar week), Diesen Monat (through end of this calendar
+month), Später (everything after that, plus tasks with no due date) — computed in
+`LaterController`, no new column. A group heading is only rendered when it has tasks. Nav
+stays **Heute / Später / Erledigt**, unchanged. Separately: each row on **Erledigt** now
+shows "Erledigt · dd.mm.yyyy" using the already-stored `completed_at`, replacing the
+editable due-date control for done tasks (editing a due date on a finished task isn't a real
+action).
+
+**Reason:** MANIFESTO.md caps main nav at 3–4 entries; 5 top-level pages would breach that
+for a distinction (this-week vs. this-month vs. later) that's really about scannability
+within "not today," not a new kind of page. Grouping the existing Später list gets the user
+the same organizational clarity without adding navigation surface. The completion date was
+explicitly requested and was already being collected (`completed_at`) but never shown.
+
+**Rejected alternative:** The literal 5-nav-link request — rejected per the manifesto limit;
+grouped sections on the existing page satisfy the same underlying need (find things by *when*
+they're coming up) without the added navigation cost.
+
+**Simplicity impact:** Nav unchanged at 3 items. Später gained three conditional headings
+(no new page, no new field); Erledigt rows show one more fact they already had. No new
+concepts introduced.

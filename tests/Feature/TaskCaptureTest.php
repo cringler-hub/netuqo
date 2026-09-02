@@ -227,4 +227,32 @@ class TaskCaptureTest extends TestCase
 
         $this->assertNull($task->fresh()->area);
     }
+
+    public function test_later_groups_tasks_into_this_week_this_month_and_later(): void
+    {
+        $this->post('/tasks', ['title' => 'Diese Woche fällig', 'due_at' => now()->endOfWeek()->format('Y-m-d')]);
+        $this->post('/tasks', ['title' => 'Diesen Monat fällig', 'due_at' => now()->endOfMonth()->format('Y-m-d')]);
+        $this->post('/tasks', ['title' => 'Ohne Termin']);
+
+        $response = $this->get('/later')->assertOk();
+        $response->assertSeeInOrder(['Diese Woche', 'Diese Woche fällig', 'Diesen Monat', 'Diesen Monat fällig', 'Später', 'Ohne Termin']);
+    }
+
+    public function test_later_omits_empty_groups(): void
+    {
+        $this->post('/tasks', ['title' => 'Ohne Termin']);
+
+        $response = $this->get('/later')->assertOk();
+        $response->assertDontSee('Diese Woche')->assertDontSee('Diesen Monat')->assertSee('Später');
+    }
+
+    public function test_done_task_shows_when_it_was_completed(): void
+    {
+        $this->post('/tasks', ['title' => 'Steuererklärung abschicken']);
+        $task = Task::first();
+
+        $this->post(route('tasks.complete', $task));
+
+        $this->get('/done')->assertOk()->assertSee('Erledigt · '.now()->format('d.m.Y'));
+    }
 }

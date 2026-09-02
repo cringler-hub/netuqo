@@ -97,40 +97,44 @@
                 @endif
             </form>
         </div>
-        <div x-data="{ editingDate: false }">
-            <button
-                type="button"
-                x-show="!editingDate"
-                @click="editingDate = true"
-                class="uppercase tracking-wide {{ $isOverdue ? 'font-semibold text-danger' : 'hover:text-text' }}"
-            >
-                {{ $isOverdue ? 'Überfällig · '.$task->due_at->format('d.m.') : ($task->due_at ? $task->due_at->format('d.m.') : '+ Datum') }}
-            </button>
-            <form
-                x-show="editingDate"
-                x-cloak
-                @click.outside="editingDate = false"
-                method="POST"
-                action="{{ route('tasks.update', $task) }}"
-                class="flex items-center gap-1"
-            >
-                @csrf
-                @method('PATCH')
-                <input
-                    type="date"
-                    name="due_at"
-                    x-ref="dueAtEdit"
-                    value="{{ $task->due_at?->format('Y-m-d') }}"
-                    onchange="this.form.submit()"
-                    class="rounded border border-border bg-transparent px-2 py-0.5 text-xs text-text focus:border-primary focus:outline-none"
-                >
+        @if ($task->status === 'done')
+            <span class="uppercase tracking-wide">Erledigt · {{ $task->completed_at?->format('d.m.Y') }}</span>
+        @else
+            <div x-data="{ editingDate: false }">
                 <button
                     type="button"
-                    @click="$refs.dueAtEdit.value = '{{ now()->format('Y-m-d') }}'; $refs.dueAtEdit.form.submit()"
-                    class="rounded-full border border-border px-2 py-0.5 uppercase tracking-wide transition-colors hover:text-text"
-                >Heute</button>
-            </form>
-        </div>
+                    x-show="!editingDate"
+                    @click="editingDate = true"
+                    class="uppercase tracking-wide {{ $isOverdue ? 'font-semibold text-danger' : 'hover:text-text' }}"
+                >
+                    {{ $isOverdue ? 'Überfällig · '.$task->due_at->format('d.m.') : ($task->due_at ? $task->due_at->format('d.m.') : '+ Datum') }}
+                </button>
+                <form
+                    x-show="editingDate"
+                    x-cloak
+                    @click.outside="editingDate = false"
+                    method="POST"
+                    action="{{ route('tasks.update', $task) }}"
+                    class="flex items-center gap-1"
+                >
+                    @csrf
+                    @method('PATCH')
+                    <input
+                        type="date"
+                        name="due_at"
+                        x-ref="dueAtEdit"
+                        value="{{ $task->due_at?->format('Y-m-d') }}"
+                        onchange="this.form.submit()"
+                        class="rounded border border-border bg-transparent px-2 py-0.5 text-xs text-text focus:border-primary focus:outline-none"
+                    >
+                    <button
+                        type="button"
+                        @click="$refs.dueAtEdit.value = '{{ now()->format('Y-m-d') }}'; $refs.dueAtEdit.form.submit()"
+                        class="rounded-full border border-border px-2 py-0.5 uppercase tracking-wide transition-colors hover:text-text"
+                    >Heute</button>
+                </form>
+            </div>
+        @endif
     </div>
     <form method="POST" action="{{ route('tasks.destroy', $task) }}" onsubmit="return confirm('Aufgabe wirklich löschen?')" class="hidden sm:block">
         @csrf
