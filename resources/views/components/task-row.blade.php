@@ -4,23 +4,37 @@
     $isOverdue = $task->status === 'open' && $task->due_at && $task->due_at->isBefore(now()->startOfDay());
 @endphp
 
-<div class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[var(--radius-task)] px-2 py-3 -mx-2 transition-colors hover:bg-surface/50">
+<div class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[var(--radius-task)] px-2 py-3 -mx-2 transition-colors hover:bg-surface/50" x-data="{ completing: false }">
     <div class="flex min-w-0 flex-1 items-center gap-4">
-        <form method="POST" action="{{ $task->status === 'open' ? route('tasks.complete', $task) : route('tasks.reopen', $task) }}">
-            @csrf
-            <button
-                type="submit"
-                class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors {{ $task->status === 'done' ? 'border-success bg-success/20 text-success' : 'border-border text-transparent hover:border-primary' }}"
-            >
-                <span class="text-xs">✓</span>
-            </button>
-        </form>
+        @if ($task->status === 'open')
+            <form method="POST" action="{{ route('tasks.complete', $task) }}" @submit.prevent="completing = true; setTimeout(() => $el.submit(), 350)">
+                @csrf
+                <button
+                    type="submit"
+                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border text-transparent transition-colors hover:border-primary"
+                    :style="completing && 'border-color: var(--color-success); background-color: rgba(143, 191, 166, 0.2); color: var(--color-success)'"
+                >
+                    <span class="text-xs">✓</span>
+                </button>
+            </form>
+        @else
+            <form method="POST" action="{{ route('tasks.reopen', $task) }}">
+                @csrf
+                <button
+                    type="submit"
+                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-success bg-success/20 text-success transition-colors"
+                >
+                    <span class="text-xs">✓</span>
+                </button>
+            </form>
+        @endif
         <div class="min-w-0 flex-1" x-data="{ editingTitle: false }">
             <button
                 type="button"
                 x-show="!editingTitle"
                 @click="editingTitle = true; $nextTick(() => $refs.titleEdit.focus())"
                 class="block w-full truncate text-left text-base {{ $task->status === 'done' ? 'text-text-muted line-through' : 'text-text hover:text-primary' }}"
+                :style="completing && 'color: var(--color-text-muted); text-decoration: line-through'"
             >{{ $task->title }}</button>
             <form
                 x-show="editingTitle"

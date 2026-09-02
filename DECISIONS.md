@@ -463,3 +463,27 @@ they're coming up) without the added navigation cost.
 **Simplicity impact:** Nav unchanged at 3 items. Später gained three conditional headings
 (no new page, no new field); Erledigt rows show one more fact they already had. No new
 concepts introduced.
+
+---
+
+## 2026-09-02 — Brief "just completed" feedback before a task leaves Heute
+
+**Decision:** Clicking a task's checkbox now shows a short (350ms) visual confirmation —
+checkmark fills green, title strikes through — before the page navigates away and the task
+disappears from the list. Implemented in `<x-task-row>` with a small Alpine `x-data` flag
+(`completing`) that intercepts the complete form's submit, applies the "done" look via
+`:style` (kept separate from the server-rendered default classes so there's no flash of
+wrong styling before Alpine loads), then submits for real after the delay. Reopening a task
+is unchanged (no delay) — only completing was reported as jarring.
+
+**Reason:** User feedback: marking a task done on Heute made it vanish instantly with no
+sense that the click registered.
+
+**Rejected alternative:** An async (fetch-based) complete + client-side row removal —
+rejected as the same added-complexity trade-off already declined in the earlier perf
+investigation; a plain delayed native submit gets the same visible feedback with a few lines
+of Alpine, no new request/state pattern.
+
+**Simplicity impact:** None on the product — no new screen, field, or interaction; the
+existing single click still completes a task, just with a moment of visible confirmation
+first.
