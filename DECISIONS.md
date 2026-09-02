@@ -399,3 +399,19 @@ established for due dates, just applied to the other editable field.
 
 **Simplicity impact:** None — reuses the existing update endpoint and edit-in-place pattern,
 no new screen or concept.
+
+---
+
+## 2026-09-02 — Task area (Business/Privat) editable after capture
+
+**Decision:** Click a task's area chip (or "+ Kategorie" if unset) to reveal Business/Privat
+toggle buttons plus a "×" to clear it — same edit-in-place family as title and due date, all
+via the existing `PATCH /tasks/{task}` route (now also accepting `area`).
+
+**Reason:** User feedback — area was set-once-at-capture only; a task filed under the wrong
+category, or captured without one, had no way to be corrected.
+
+**Rejected alternative:** None considered — same pattern already established for title and
+due date, applied to the third and last editable field.
+
+**Simplicity impact:** None — no new screen or concept, reuses the existing update endpoint.

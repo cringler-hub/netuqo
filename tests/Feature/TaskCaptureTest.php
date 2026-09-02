@@ -196,4 +196,35 @@ class TaskCaptureTest extends TestCase
         $response->assertSessionHasErrors('title');
         $this->assertSame('Wichtiger Titel', $task->fresh()->title);
     }
+
+    public function test_a_tasks_area_can_be_set_afterwards(): void
+    {
+        $this->post('/tasks', ['title' => 'Ohne Kategorie']);
+        $task = Task::first();
+
+        $response = $this->patch(route('tasks.update', $task), ['area' => 'business']);
+
+        $response->assertRedirect();
+        $this->assertSame('business', $task->fresh()->area);
+    }
+
+    public function test_a_tasks_area_can_be_changed_afterwards(): void
+    {
+        $this->post('/tasks', ['title' => 'Falsch einsortiert', 'area' => 'private']);
+        $task = Task::first();
+
+        $this->patch(route('tasks.update', $task), ['area' => 'business']);
+
+        $this->assertSame('business', $task->fresh()->area);
+    }
+
+    public function test_a_tasks_area_can_be_removed(): void
+    {
+        $this->post('/tasks', ['title' => 'Doch keine Kategorie', 'area' => 'business']);
+        $task = Task::first();
+
+        $this->patch(route('tasks.update', $task), ['area' => '']);
+
+        $this->assertNull($task->fresh()->area);
+    }
 }

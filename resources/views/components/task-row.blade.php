@@ -42,41 +42,80 @@
             >
         </form>
     </div>
-    <div class="flex shrink-0 items-center gap-2 text-xs text-text-muted" x-data="{ editingDate: false }">
-        @if ($task->area)
-            <span class="rounded-full bg-white/5 px-2 py-0.5 uppercase tracking-wide">{{ $task->area === 'business' ? 'Business' : 'Privat' }}</span>
-        @endif
-        <button
-            type="button"
-            x-show="!editingDate"
-            @click="editingDate = true"
-            class="uppercase tracking-wide {{ $isOverdue ? 'font-semibold text-danger' : 'hover:text-text' }}"
-        >
-            {{ $isOverdue ? 'Überfällig · '.$task->due_at->format('d.m.') : ($task->due_at ? $task->due_at->format('d.m.') : '+ Datum') }}
-        </button>
-        <form
-            x-show="editingDate"
-            x-cloak
-            @click.outside="editingDate = false"
-            method="POST"
-            action="{{ route('tasks.update', $task) }}"
-        >
-            @csrf
-            @method('PATCH')
-            <input
-                type="date"
-                name="due_at"
-                x-ref="dueAtEdit"
-                value="{{ $task->due_at?->format('Y-m-d') }}"
-                onchange="this.form.submit()"
-                class="rounded border border-border bg-transparent px-2 py-0.5 text-xs text-text focus:border-primary focus:outline-none"
-            >
+    <div class="flex shrink-0 items-center gap-2 text-xs text-text-muted">
+        <div x-data="{ editingArea: false }">
             <button
                 type="button"
-                @click="$refs.dueAtEdit.value = '{{ now()->format('Y-m-d') }}'; $refs.dueAtEdit.form.submit()"
-                class="ml-1 rounded-full border border-border px-2 py-0.5 uppercase tracking-wide transition-colors hover:text-text"
-            >Heute</button>
-        </form>
+                x-show="!editingArea"
+                @click="editingArea = true"
+                class="rounded-full bg-white/5 px-2 py-0.5 uppercase tracking-wide hover:text-text"
+            >{{ $task->area ? ($task->area === 'business' ? 'Business' : 'Privat') : '+ Kategorie' }}</button>
+            <form
+                x-show="editingArea"
+                x-cloak
+                @click.outside="editingArea = false"
+                method="POST"
+                action="{{ route('tasks.update', $task) }}"
+                x-ref="areaForm"
+                class="flex items-center gap-1"
+            >
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="area" x-ref="areaInput" value="{{ $task->area }}">
+                <button
+                    type="button"
+                    @click="$refs.areaInput.value = 'business'; $refs.areaForm.requestSubmit()"
+                    class="rounded-full border px-2 py-0.5 uppercase tracking-wide {{ $task->area === 'business' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-text-muted hover:text-text' }}"
+                >Business</button>
+                <button
+                    type="button"
+                    @click="$refs.areaInput.value = 'private'; $refs.areaForm.requestSubmit()"
+                    class="rounded-full border px-2 py-0.5 uppercase tracking-wide {{ $task->area === 'private' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-text-muted hover:text-text' }}"
+                >Privat</button>
+                @if ($task->area)
+                    <button
+                        type="button"
+                        @click="$refs.areaInput.value = ''; $refs.areaForm.requestSubmit()"
+                        aria-label="Kategorie entfernen"
+                        class="text-text-muted hover:text-danger"
+                    >&times;</button>
+                @endif
+            </form>
+        </div>
+        <div x-data="{ editingDate: false }">
+            <button
+                type="button"
+                x-show="!editingDate"
+                @click="editingDate = true"
+                class="uppercase tracking-wide {{ $isOverdue ? 'font-semibold text-danger' : 'hover:text-text' }}"
+            >
+                {{ $isOverdue ? 'Überfällig · '.$task->due_at->format('d.m.') : ($task->due_at ? $task->due_at->format('d.m.') : '+ Datum') }}
+            </button>
+            <form
+                x-show="editingDate"
+                x-cloak
+                @click.outside="editingDate = false"
+                method="POST"
+                action="{{ route('tasks.update', $task) }}"
+                class="flex items-center gap-1"
+            >
+                @csrf
+                @method('PATCH')
+                <input
+                    type="date"
+                    name="due_at"
+                    x-ref="dueAtEdit"
+                    value="{{ $task->due_at?->format('Y-m-d') }}"
+                    onchange="this.form.submit()"
+                    class="rounded border border-border bg-transparent px-2 py-0.5 text-xs text-text focus:border-primary focus:outline-none"
+                >
+                <button
+                    type="button"
+                    @click="$refs.dueAtEdit.value = '{{ now()->format('Y-m-d') }}'; $refs.dueAtEdit.form.submit()"
+                    class="rounded-full border border-border px-2 py-0.5 uppercase tracking-wide transition-colors hover:text-text"
+                >Heute</button>
+            </form>
+        </div>
     </div>
     <form method="POST" action="{{ route('tasks.destroy', $task) }}" onsubmit="return confirm('Aufgabe wirklich löschen?')">
         @csrf
