@@ -99,3 +99,26 @@ order, three GitHub Actions runs. No local install, no terminal needed on your s
    schedule:run` — check the minimum interval your package allows (often 5–15 minutes on
    shared hosting, not the 1-minute interval Laravel recommends); not needed for the current
    foundation.
+
+## Known blocker: only `/` works, every other URL 500s
+
+**Confirmed hosting-side bug, not application code** — see the full diagnosis trail in
+`DECISIONS.md` (2026-09-02 entry). Summary: `GET /index.php` (a direct file request) works;
+any URL that requires `public/.htaccess`'s `mod_rewrite` rule to internally forward to
+`index.php` — which is every URL except `/` itself, since Apache's `DirectoryIndex` finds
+`index.php` directly there — returns a raw Apache 500. This was proven with Laravel's own
+zero-code `/up` route, ruling out anything in this app.
+
+**What to try, in order:**
+1. In the IONOS panel, look for a **PHP execution mode / handler setting** for this domain
+   (often phrased as CGI vs. FPM, or "PHP-Handler"). The web-facing PHP currently reports
+   itself as `cgi-fcgi` — switching it to an FPM-based mode commonly fixes exactly this
+   class of `mod_rewrite`-to-PHP handoff issue on shared hosting.
+2. If there's no such setting, open an IONOS support ticket with this exact, reproducible
+   symptom: *"Requests to any URL that requires an internal `mod_rewrite` redirect to a PHP
+   script return a 500 with a failed ErrorDocument; a direct request to the same PHP script
+   by its literal filename returns 200."* That sentence alone should let their support
+   pinpoint it quickly — it's a known category of issue, not a Laravel-specific one.
+
+Until this is fixed, the app is not usable in production beyond the static `/` page — Quick
+Capture's `POST /tasks` is blocked by it too.

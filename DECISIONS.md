@@ -117,3 +117,35 @@ costs nothing here since there's only ever one row in `users` for now.
 **Simplicity impact:** None on the current single-user experience. `currentUser()` is a
 single, clearly-commented method to delete once login exists — not spread across the
 codebase.
+
+---
+
+## 2026-09-02 — Production 500 on any non-root URL: confirmed hosting bug, not our code
+
+**Finding:** `POST /tasks` (and every other non-root route, including Laravel's own
+zero-code `/up` health check) returns a raw Apache 500 ("...encountered while trying to
+use an ErrorDocument to handle the request") in production. `GET /` works. Ruled out, in
+order, with disposable diagnostic workflows (each removed after use):
+- Not app/business logic — the exact `User::firstOrCreate()` + `tasks()->create()` code
+  from `TaskController::store` succeeds cleanly when run via `artisan tinker` on the server.
+- Not CSRF/session — a route with CSRF verification fully excluded 500s identically.
+- Not our Blade views — `view('diag')->render()` succeeds via CLI; the compiled view cache
+  is present and correct.
+- Not route caching — `route:cache` exits 0, and `route:list` correctly lists every route
+  including brand-new ones.
+- **Root cause, confirmed:** `GET /index.php` (direct file request) → 200. `GET
+  /anything-that-requires-mod_rewrites-internal-forward-to-index.php` → 500, even for a
+  path that doesn't exist at all. `/` only works because Apache's `DirectoryIndex` finds
+  `index.php` directly, without needing `mod_rewrite`'s internal redirect. The redirect
+  itself — `public/.htaccess`'s standard Laravel `RewriteRule ^ index.php [L]` — is what
+  breaks on this webspace, most likely a PHP-CGI/`Action`-handler mismatch for internally
+  rewritten requests (the web-facing PHP SAPI reports itself as `cgi-fcgi`, consistent with
+  this class of legacy-CGI + mod_rewrite issue on shared hosting).
+
+**Why this matters for future sessions:** don't re-diagnose this as an app bug. If a route
+other than `/` 500s in production, check this first. The fix is on the IONOS side (a PHP
+handler/execution-mode setting in the panel, or an IONOS support ticket) — not something
+`.htaccess` tweaks from our side reliably solve. See README for the concrete next step.
+
+**Simplicity impact:** None; this blocks the app from being usable in production at all
+until resolved, independent of any feature work.

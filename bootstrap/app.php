@@ -12,8 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // TEMPORARY: isolating the production 500 on POST — remove with the diag routes.
-        $middleware->validateCsrfTokens(except: ['diag-ping-nocsrf']);
+        //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
