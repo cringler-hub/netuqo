@@ -80,6 +80,20 @@ class TaskCaptureTest extends TestCase
         $this->get('/')->assertOk()->assertSee('Rechnung schreiben');
     }
 
+    public function test_overdue_task_is_labeled(): void
+    {
+        $this->post('/tasks', ['title' => 'Rechnung schreiben', 'due_at' => now()->subDays(2)->format('Y-m-d')]);
+
+        $this->get('/')->assertOk()->assertSee('Überfällig');
+    }
+
+    public function test_task_due_today_is_not_labeled_overdue(): void
+    {
+        $this->post('/tasks', ['title' => 'Angebot prüfen', 'due_at' => now()->format('Y-m-d')]);
+
+        $this->get('/')->assertOk()->assertDontSee('Überfällig');
+    }
+
     public function test_task_due_in_the_future_appears_on_later(): void
     {
         $this->post('/tasks', ['title' => 'Reise planen', 'due_at' => now()->addDays(5)->format('Y-m-d')]);

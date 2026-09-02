@@ -240,3 +240,28 @@ is one line, needs no new component, and is enough friction to prevent a mis-cli
 
 **Simplicity impact:** None on the default path (capture/complete); adds one icon per row,
 consistent with "complete a task = 1 click."
+
+---
+
+## 2026-09-02 — Session/cache off MySQL, overdue tasks labeled
+
+**Decision:** Switched `SESSION_DRIVER` and `CACHE_STORE` from `database` to `file`, both in
+`.env.example`/`ionos-bootstrap.yml` (for future installs) and on the live server (one-time
+`ionos-tune-perf.yml`, delete once confirmed applied). Every request was doing a session read
++ write against MySQL on top of whatever the request itself needed — that's now local disk
+I/O instead. Also: an open task whose due date is before today now shows "Überfällig · <date>"
+in red on its row (checked live, not stored — no new column).
+
+**Reason:** User feedback that capturing a task feels slow — directly against MANIFESTO's
+"Capture a task < 5 seconds" metric. Session/cache-on-MySQL is a well-known source of
+avoidable per-request latency on shared hosting; removing it can only help, and is safe
+regardless of the exact bottleneck. Second, separate feedback: overdue tasks were visually
+identical to tasks due later today, easy to miss on Heute.
+
+**Rejected alternative:** Diagnosing further (opcache status, DB host round-trip time, etc.)
+before changing anything — rejected for now; this fix is unambiguously correct and low-risk,
+so it ships first. If task capture still feels slow after this, that's the next thing to
+measure, not guess at.
+
+**Simplicity impact:** None on the product. Overdue labeling adds no new field, screen, or
+interaction — it's computed from data already captured.

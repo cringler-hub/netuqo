@@ -1,5 +1,9 @@
 @props(['task'])
 
+@php
+    $isOverdue = $task->status === 'open' && $task->due_at && $task->due_at->isBefore(now()->startOfDay());
+@endphp
+
 <div class="flex items-center gap-4 rounded-[var(--radius-task)] px-2 py-3 -mx-2">
     <form method="POST" action="{{ $task->status === 'open' ? route('tasks.complete', $task) : route('tasks.reopen', $task) }}">
         @csrf
@@ -15,8 +19,13 @@
         @if ($task->area)
             <span class="rounded-full bg-background px-2 py-0.5 text-xs">{{ $task->area === 'business' ? 'Business' : 'Privat' }}</span>
         @endif
-        <button type="button" x-show="!editingDate" @click="editingDate = true" class="hover:text-text">
-            {{ $task->due_at ? $task->due_at->format('d.m.') : '+ Datum' }}
+        <button
+            type="button"
+            x-show="!editingDate"
+            @click="editingDate = true"
+            class="{{ $isOverdue ? 'font-medium text-red-600 hover:text-red-700' : 'hover:text-text' }}"
+        >
+            {{ $isOverdue ? 'Überfällig · '.$task->due_at->format('d.m.') : ($task->due_at ? $task->due_at->format('d.m.') : '+ Datum') }}
         </button>
         <form
             x-show="editingDate"
