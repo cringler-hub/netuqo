@@ -143,9 +143,37 @@ order, with disposable diagnostic workflows (each removed after use):
   this class of legacy-CGI + mod_rewrite issue on shared hosting).
 
 **Why this matters for future sessions:** don't re-diagnose this as an app bug. If a route
-other than `/` 500s in production, check this first. The fix is on the IONOS side (a PHP
-handler/execution-mode setting in the panel, or an IONOS support ticket) — not something
-`.htaccess` tweaks from our side reliably solve. See README for the concrete next step.
+other than `/` 500s in production, check this first.
 
-**Simplicity impact:** None; this blocks the app from being usable in production at all
-until resolved, independent of any feature work.
+**Simplicity impact:** None; this blocked the app from being usable in production at all
+until resolved, independent of any feature work. See the follow-up entry below for the fix.
+
+---
+
+## 2026-09-02 — Fixed: `RewriteBase /` + `Options +FollowSymLinks` in `public/.htaccess`
+
+**Decision:** Added two directives to `public/.htaccess`, above `RewriteEngine On`:
+
+```apache
+Options +FollowSymLinks
+RewriteBase /
+```
+
+This is IONOS's own documented fix for exactly this symptom (internally-rewritten
+`mod_rewrite` requests to a front controller failing with a raw 500). **Confirmed working
+end-to-end in production**: `GET /up` → 200, and a real `POST /tasks` (with CSRF token)
+successfully created a task that then appeared on `/`.
+
+**Why the earlier "hosting bug, needs a support ticket" framing was wrong:** `leadscout`
+(this account's other project) is a static site with no PHP at all, and `messefeedback`
+(also on this account) is PHP but uses zero `mod_rewrite` — every page is requested by its
+real filename (`index.php`, `submit.php`, `danke.php`). Neither had ever exercised
+`mod_rewrite`'s internal-redirect-to-PHP path before netuqo. So "nothing else on this
+account was broken" didn't mean mod_rewrite worked here — it meant it had never been
+tested. Once actually tested and fixed with the directives above, it works fine.
+
+**Rejected alternative:** Waiting on IONOS support / switching PHP execution mode in the
+panel — unnecessary once the actual documented `.htaccess` fix was found and verified.
+
+**Simplicity impact:** None on the product. Two lines in a config file Laravel ships by
+default anyway; no application code changed.
