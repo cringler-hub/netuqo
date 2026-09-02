@@ -2,11 +2,15 @@
 
 use App\Http\Controllers\DoneController;
 use App\Http\Controllers\LaterController;
+use App\Http\Controllers\MonthController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TodayController;
+use App\Http\Controllers\WeekController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [TodayController::class, 'index'])->name('today');
+Route::get('/week', [WeekController::class, 'index'])->name('week');
+Route::get('/month', [MonthController::class, 'index'])->name('month');
 Route::get('/later', [LaterController::class, 'index'])->name('later');
 Route::get('/done', [DoneController::class, 'index'])->name('done');
 

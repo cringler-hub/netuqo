@@ -94,11 +94,31 @@ class TaskCaptureTest extends TestCase
         $this->get('/')->assertOk()->assertDontSee('Überfällig');
     }
 
-    public function test_task_due_in_the_future_appears_on_later(): void
+    public function test_task_due_this_week_appears_on_week_page(): void
     {
-        $this->post('/tasks', ['title' => 'Reise planen', 'due_at' => now()->addDays(5)->format('Y-m-d')]);
+        $this->post('/tasks', ['title' => 'Wocheneinkauf', 'due_at' => now()->endOfWeek()->format('Y-m-d')]);
 
-        $this->get('/')->assertOk()->assertDontSee('Reise planen');
+        $this->get('/')->assertOk()->assertDontSee('Wocheneinkauf');
+        $this->get('/week')->assertOk()->assertSee('Wocheneinkauf');
+        $this->get('/month')->assertOk()->assertDontSee('Wocheneinkauf');
+        $this->get('/later')->assertOk()->assertDontSee('Wocheneinkauf');
+    }
+
+    public function test_task_due_this_month_appears_on_month_page(): void
+    {
+        $this->post('/tasks', ['title' => 'Monatsabschluss', 'due_at' => now()->endOfMonth()->format('Y-m-d')]);
+
+        $this->get('/week')->assertOk()->assertDontSee('Monatsabschluss');
+        $this->get('/month')->assertOk()->assertSee('Monatsabschluss');
+        $this->get('/later')->assertOk()->assertDontSee('Monatsabschluss');
+    }
+
+    public function test_task_due_far_in_the_future_appears_on_later_page(): void
+    {
+        $this->post('/tasks', ['title' => 'Reise planen', 'due_at' => now()->addMonths(2)->format('Y-m-d')]);
+
+        $this->get('/week')->assertOk()->assertDontSee('Reise planen');
+        $this->get('/month')->assertOk()->assertDontSee('Reise planen');
         $this->get('/later')->assertOk()->assertSee('Reise planen');
     }
 
@@ -139,6 +159,8 @@ class TaskCaptureTest extends TestCase
         $response->assertRedirect();
         $this->assertSame(now()->format('Y-m-d'), $task->fresh()->due_at->format('Y-m-d'));
         $this->get('/')->assertOk()->assertSee('Workshop vorbereiten');
+        $this->get('/week')->assertOk()->assertDontSee('Workshop vorbereiten');
+        $this->get('/month')->assertOk()->assertDontSee('Workshop vorbereiten');
         $this->get('/later')->assertOk()->assertDontSee('Workshop vorbereiten');
     }
 
@@ -226,46 +248,6 @@ class TaskCaptureTest extends TestCase
         $this->patch(route('tasks.update', $task), ['area' => '']);
 
         $this->assertNull($task->fresh()->area);
-    }
-
-    public function test_later_groups_tasks_into_this_week_this_month_and_later(): void
-    {
-        $this->post('/tasks', ['title' => 'Diese Woche fällig', 'due_at' => now()->endOfWeek()->format('Y-m-d')]);
-        $this->post('/tasks', ['title' => 'Diesen Monat fällig', 'due_at' => now()->endOfMonth()->format('Y-m-d')]);
-        $this->post('/tasks', ['title' => 'Ohne Termin']);
-
-        $response = $this->get('/later')->assertOk();
-        $response->assertSeeInOrder(['Diese Woche', 'Diese Woche fällig', 'Diesen Monat', 'Diesen Monat fällig', 'Später', 'Ohne Termin']);
-    }
-
-    public function test_later_omits_empty_groups(): void
-    {
-        $this->post('/tasks', ['title' => 'Ohne Termin']);
-
-        $response = $this->get('/later')->assertOk();
-        $content = $response->getContent();
-
-        // "Diese Woche"/"Diesen Monat" still appear once each as filter tabs, but not as
-        // section headings, since both groups are empty.
-        $this->assertSame(1, substr_count($content, 'Diese Woche'));
-        $this->assertSame(1, substr_count($content, 'Diesen Monat'));
-        $response->assertSee('Später');
-    }
-
-    public function test_later_range_filter_narrows_to_one_group(): void
-    {
-        $this->post('/tasks', ['title' => 'Diese Woche fällig', 'due_at' => now()->endOfWeek()->format('Y-m-d')]);
-        $this->post('/tasks', ['title' => 'Ohne Termin']);
-
-        $this->get('/later?range=week')
-            ->assertOk()
-            ->assertSee('Diese Woche fällig')
-            ->assertDontSee('Ohne Termin');
-
-        $this->get('/later?range=later')
-            ->assertOk()
-            ->assertSee('Ohne Termin')
-            ->assertDontSee('Diese Woche fällig');
     }
 
     public function test_done_task_shows_when_it_was_completed(): void

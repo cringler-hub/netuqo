@@ -511,3 +511,45 @@ stays untouched at Heute/Später/Erledigt.
 **Simplicity impact:** None on the product's information architecture — reuses the exact
 filter-bar pattern and query-param mechanism already established for `?area=`. One new small
 Blade component (`range-filter`), no new screen, no client-side state.
+
+---
+
+## 2026-09-02 — Später split into five real pages: nav grows to Heute/Diese Woche/Diesen Monat/Später/Erledigt
+
+**Decision:** Superseded the two entries above. The user rejected both the grouped-sections
+and the in-page filter-bar approach and explicitly asked for **separate pages** — not a
+single page presenting the three buckets differently. Nav is now five items: **Heute**,
+**Diese Woche**, **Diesen Monat**, **Später**, **Erledigt**. Two new controllers/routes/views
+(`WeekController`/`/week`, `MonthController`/`/month`) join the simplified `LaterController`
+(now back to a single flat bucket: due after this month, or no due date at all).
+`Später`'s copy changed from "alles was noch nicht heute dran ist" to "alles danach, oder
+ganz ohne Termin" to reflect its narrower scope. The `range-filter` component and `?range=`
+query param from the previous entry are removed as dead code; `area-filter` reverted to its
+original (pre-`range`) shape. The Diese-Woche/Diesen-Monat/Später boundary math itself is
+unchanged, just extracted into a shared `Controller::weekAndMonthCutoffs()` helper so the
+three pages can't drift out of sync with each other.
+
+**Reason:** Direct, repeated, explicit user instruction, after two alternative
+implementations were tried and rejected in this same conversation.
+
+**Explicit MANIFESTO.md deviation:** This knowingly exceeds the "Main navigation entries |
+max 3–4" simplicity metric (now 5). Recorded here as a deliberate product decision the user
+made with the trade-off visible, the same way the earlier "full Premium Noir adoption"
+decision knowingly traded away a simplicity default — not a case of the guardrail being
+missed or ignored by the implementer. MANIFESTO.md itself is left unedited; this is a
+one-off override of that metric for this specific screen, not a change to the stated
+principle.
+
+**Follow-up fix in the same change:** The 5-item nav overflowed and clipped on mobile
+(~390px) — "Erledigt" was cut off past the viewport edge. Fixed the same way as the earlier
+task-row mobile fix: the header row and nav both wrap (`flex-wrap`) below the `sm` breakpoint
+so nav drops onto its own full-width row(s) under the logo on narrow screens; `sm:`+ stays a
+single row, unchanged.
+
+**Rejected alternative:** None — this is the user's explicit, unambiguous instruction after
+two rejected alternatives; no further alternative was proposed.
+
+**Simplicity impact:** Negative on the documented nav-count metric specifically (3–4 → 5),
+accepted as an explicit trade the user made. Everything else about the interaction stays as
+simple as before: still one click to see any bucket, still plain server-rendered pages with
+real URLs, no new fields or concepts.
