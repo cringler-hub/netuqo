@@ -38,7 +38,13 @@ jobs:
             pwd
             echo "--- folder listing ---"
             ls -la
-            echo "--- php version ---"
+            echo "--- default 'php' version (likely wrong/old) ---"
             php -v || echo "php command not found"
+            echo "--- looking for the real PHP 8.4 binary ---"
+            ls -la /usr/bin/php* 2>&1 || true
+            for candidate in php8.4 php84 php8 php-cli /usr/bin/php8.4 /usr/bin/php84 /usr/local/bin/php8.4; do
+              echo "trying: $candidate"
+              command -v "$candidate" 2>&1 && "$candidate" -v 2>&1
+            done
             echo "--- rsync availability (needed by deploy.yml) ---"
             rsync --version || echo "rsync not found on remote"
