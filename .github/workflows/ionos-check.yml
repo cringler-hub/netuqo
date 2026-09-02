@@ -1,10 +1,8 @@
 name: IONOS connection check (temporary)
 
-# Isolating the POST /tasks 500: /diag-ping goes through normal CSRF, /diag-ping-nocsrf
-# is excluded from CSRF entirely. If nocsrf works but the other doesn't, it's CSRF/session.
-# If both fail, it's something more fundamental about POST on this server. Delete once
-# resolved, along with the diag routes in routes/web.php and bootstrap/app.php.
-# (re-run after deploy.yml confirmed complete)
+# GET /diag (brand new route, trivial closure + view) fails with the same 500 as POST
+# /tasks — so this isn't CSRF/POST-specific after all. Checking whether GET / still
+# works, and what Laravel's own log says now.
 
 on:
   workflow_dispatch: {}
@@ -17,18 +15,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Test both diagnostic POST endpoints
+      - name: Compare GET / vs GET /diag, then check the Laravel log
         run: |
-          echo "--- POST /diag-ping-nocsrf (no CSRF middleware at all, no body) ---"
-          curl -s -o /tmp/nocsrf.html -w "HTTP %{http_code}\n" -X POST http://netuqo.com/diag-ping-nocsrf
-          head -c 500 /tmp/nocsrf.html; echo
+          echo "--- GET / (known-good Today page) ---"
+          curl -s -o /tmp/home.html -w "HTTP %{http_code}\n" http://netuqo.com/
+          echo "--- GET /diag (new route) ---"
+          curl -s -o /tmp/diag.html -w "HTTP %{http_code}\n" http://netuqo.com/diag
+          head -c 300 /tmp/diag.html; echo
 
-          echo "--- POST /diag-ping WITHOUT a valid token (expect a clean 419, not a raw 500) ---"
-          curl -s -o /tmp/noauth.html -w "HTTP %{http_code}\n" -X POST http://netuqo.com/diag-ping
-          head -c 500 /tmp/noauth.html; echo
-
-          echo "--- POST /diag-ping WITH a valid session + token ---"
-          curl -s -c /tmp/cookies.txt -o /tmp/home.html -w "GET / -> HTTP %{http_code}\n" http://netuqo.com/
-          TOKEN=$(grep -oP 'name="_token" value="\K[^"]+' /tmp/home.html || true)
-          curl -s -b /tmp/cookies.txt -o /tmp/ping.html -w "HTTP %{http_code}\n" -d "_token=${TOKEN}" http://netuqo.com/diag-ping
-          head -c 500 /tmp/ping.html; echo
+      - name: Tail Laravel log + list compiled views on the server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.IONOS_SSH_HOST }}
+          port: ${{ secrets.IONOS_SSH_PORT }}
+          username: ${{ secrets.IONOS_SSH_USER }}
+          password: ${{ secrets.IONOS_SSH_PASSWORD }}
+          script: |
+            cd "${{ secrets.IONOS_TARGET_DIR }}"
+            echo "--- resources/views/diag.blade.php present? ---"
+            ls -la resources/views/diag.blade.php 2>&1 || echo "MISSING"
+            echo "--- storage/framework/views (compiled cache) ---"
+            ls -la storage/framework/views | head -20
+            echo "--- tail of laravel.log ---"
+            tail -n 60 storage/logs/laravel.log 2>&1 || echo "no laravel.log"
+            echo "--- try rendering the diag view directly via CLI ---"
+            /usr/bin/php8.4-cli artisan tinker --execute="echo view('diag')->render();" 2>&1 | head -40
