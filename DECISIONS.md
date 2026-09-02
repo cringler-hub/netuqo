@@ -73,3 +73,25 @@ rejected, no such option exists on this package tier.
 
 **Simplicity impact:** None on the product. Slightly less rotable than a keypair; rotate by
 changing the account password and the GitHub secret together if ever needed.
+
+---
+
+## 2026-09-02 — Confirmed IONOS deploy environment specifics
+
+**Decision:** Finalized `deploy.yml` against real, verified facts about this IONOS account
+(found via a temporary `ionos-check.yml` diagnostic workflow, then removed):
+
+- Real SSH shell access works (not SFTP-only), and `rsync` is present server-side.
+- SSH logs in directly at the webspace root (`/homepages/30/d26909034/htdocs`), the same
+  place SFTP shows as `/`. So `IONOS_TARGET_DIR` must be a **relative** path (`netuqo`, no
+  leading slash) — an absolute `/netuqo` would target the real filesystem root, outside the
+  account.
+- Bare `php` resolves to an ancient PHP 4.4 CGI fallback. The real PHP 8.4 CLI binary is
+  `/usr/bin/php8.4-cli`; `deploy.yml` calls it explicitly instead of relying on `php` in
+  `PATH`.
+
+**Reason:** Guessing these would have produced a deploy that fails in confusing ways (wrong
+PHP version parsing Laravel 13 code, or rsync writing outside the account). Cheaper to
+verify once with a disposable diagnostic workflow than to debug a failed production deploy.
+
+**Simplicity impact:** None on the product; pure deploy-plumbing correctness.

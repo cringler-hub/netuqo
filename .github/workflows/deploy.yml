@@ -63,9 +63,10 @@ jobs:
             --exclude=/database/*.sqlite \
             ./ "${{ secrets.IONOS_SSH_USER }}@${{ secrets.IONOS_SSH_HOST }}:${{ secrets.IONOS_TARGET_DIR }}"
 
-      # This step needs a real interactive shell on the IONOS side (not just SFTP file
-      # transfer) to run artisan commands. If the account turns out to be SFTP-only,
-      # this step will fail — see README "IONOS setup" for the fallback plan.
+      # Confirmed working via the (now removed) ionos-check.yml diagnostic:
+      # - real shell access, not just SFTP, is available on this account.
+      # - bare 'php' resolves to an ancient PHP 4.4 CGI fallback — the real PHP 8.4 CLI
+      #   binary on this account is /usr/bin/php8.4-cli, so we call it explicitly.
       - name: Run migrations & rebuild caches on the server
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -75,7 +76,7 @@ jobs:
           password: ${{ secrets.IONOS_SSH_PASSWORD }}
           script: |
             cd ${{ secrets.IONOS_TARGET_DIR }}
-            php artisan migrate --force
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
+            /usr/bin/php8.4-cli artisan migrate --force
+            /usr/bin/php8.4-cli artisan config:cache
+            /usr/bin/php8.4-cli artisan route:cache
+            /usr/bin/php8.4-cli artisan view:cache
