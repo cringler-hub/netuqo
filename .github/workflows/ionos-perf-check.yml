@@ -58,15 +58,19 @@ jobs:
               echo 'db_connection=' . config('database.default') . PHP_EOL;
               echo 'db_host=' . config('database.connections.' . config('database.default') . '.host') . PHP_EOL;
             "
-            echo "--- verbose curl to the live domain, FROM the server itself (why does it fail here too?) ---"
+            echo "--- fetch the diagnostic route via PHP's own HTTP client instead of curl (different TLS fingerprint) ---"
             set +e
-            curl -v -s -o /dev/null -w 'time_total=%{time_total} exit=%{exitcode}\n' https://netuqo.com/diag-perf 2>&1 | tail -40
-            echo "--- same, but forced to TLS 1.2 (is this a TLS 1.3-specific server bug?) ---"
-            curl --tlsv1.2 --tls-max 1.2 -s -o /dev/null -w 'time_total=%{time_total} exit=%{exitcode}\n' https://netuqo.com/diag-perf
-            echo "--- same, but without ALPN h2 offer (plain http/1.1 only) ---"
-            curl --http1.1 -s -o /dev/null -w 'time_total=%{time_total} exit=%{exitcode}\n' https://netuqo.com/diag-perf
+            /usr/bin/php8.4-cli -r "echo @file_get_contents('https://netuqo.com/diag-perf') ?: 'file_get_contents failed: ' . (error_get_last()['message'] ?? 'unknown') . PHP_EOL;"
             set -e
-            echo "--- curl version on this server ---"
-            curl --version | head -2
-            echo "--- opcache status for the CLI SAPI (web SAPI may differ) ---"
-            /usr/bin/php8.4-cli -r "var_dump(function_exists('opcache_get_status') ? ini_get('opcache.enable') : 'no opcache ext');"
+            echo ""
+            echo "--- which php-cgi/fpm binaries exist, and does EACH have opcache? (web SAPI may differ from the CLI binary) ---"
+            for bin in /usr/bin/php8.4-cli /usr/bin/php8.4-cgi /usr/bin/php-cgi /usr/bin/php8.4 /usr/sbin/php8.4-fpm; do
+              if [ -x "$bin" ]; then
+                echo "$bin:"
+                "$bin" -r "echo '  opcache extension loaded: ' . (extension_loaded('Zend OPcache') ? 'yes' : 'no') . PHP_EOL; echo '  opcache.enable=' . ini_get('opcache.enable') . PHP_EOL;" 2>&1
+              fi
+            done
+            echo "--- loaded php.ini for the CLI binary ---"
+            /usr/bin/php8.4-cli --ini | grep -i "loaded configuration"
+            echo "--- any *.ini files mentioning opcache under this account ---"
+            find / -maxdepth 6 -iname "*.ini" 2>/dev/null | xargs grep -li opcache 2>/dev/null | head -10
