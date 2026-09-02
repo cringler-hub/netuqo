@@ -246,11 +246,13 @@ consistent with "complete a task = 1 click."
 ## 2026-09-02 — Session/cache off MySQL, overdue tasks labeled
 
 **Decision:** Switched `SESSION_DRIVER` and `CACHE_STORE` from `database` to `file`, both in
-`.env.example`/`ionos-bootstrap.yml` (for future installs) and on the live server (one-time
-`ionos-tune-perf.yml`, delete once confirmed applied). Every request was doing a session read
-+ write against MySQL on top of whatever the request itself needed — that's now local disk
-I/O instead. Also: an open task whose due date is before today now shows "Überfällig · <date>"
-in red on its row (checked live, not stored — no new column).
+`.env.example`/`ionos-bootstrap.yml` (for future installs) and on the live server via a
+one-time `ionos-tune-perf.yml` workflow (confirmed applied — SESSION_DRIVER=file,
+CACHE_STORE=file live, config cache rebuilt — then removed, same as earlier disposable
+diagnostic workflows). Every request was doing a session read + write against MySQL on top
+of whatever the request itself needed — that's now local disk I/O instead. Also: an open task
+whose due date is before today now shows "Überfällig · <date>" in red on its row (checked
+live, not stored — no new column).
 
 **Reason:** User feedback that capturing a task feels slow — directly against MANIFESTO's
 "Capture a task < 5 seconds" metric. Session/cache-on-MySQL is a well-known source of
