@@ -58,7 +58,11 @@ jobs:
               echo 'db_connection=' . config('database.default') . PHP_EOL;
               echo 'db_host=' . config('database.connections.' . config('database.default') . '.host') . PHP_EOL;
             "
-            echo "--- curl to the live domain, FROM the server itself ---"
-            time curl -s -o /dev/null -w 'time_total=%{time_total}\n' https://netuqo.com/diag-perf
+            echo "--- verbose curl to the live domain, FROM the server itself (why does it fail here too?) ---"
+            set +e
+            curl -v -s -o /dev/null -w 'time_total=%{time_total} exit=%{exitcode}\n' https://netuqo.com/diag-perf 2>&1 | tail -40
+            set -e
+            echo "--- curl version on this server ---"
+            curl --version | head -2
             echo "--- opcache status for the CLI SAPI (web SAPI may differ) ---"
             /usr/bin/php8.4-cli -r "var_dump(function_exists('opcache_get_status') ? ini_get('opcache.enable') : 'no opcache ext');"
