@@ -1093,3 +1093,52 @@ desktop and a 390px mobile viewport (the exact case that exposed the positioning
 **Simplicity impact:** One more layer of interaction (a click to open the menu before reading
 Nachtmodus/Abmelden) in exchange for a header that stays visually calm as more utility items
 (Einstellungen) join later — the user's own trade-off, made explicitly aware beforehand.
+
+---
+
+## 2026-09-03 — GATE_PASSWORD set on production; automated HTTP verification abandoned
+
+**Context:** After setting `GATE_PASSWORD=12345` on production via the disposable
+`ionos-set-gate-password.yml` workflow (see the "Added a temporary site-wide password gate"
+entry above), tried to verify end-to-end by curling `https://netuqo.com` directly from the
+GitHub Actions runner (this session's own sandbox can't reach arbitrary external hosts — its
+outbound proxy only allows specific ones).
+
+**What's actually confirmed, and how:** The SSH step itself succeeded on every one of 4 runs,
+and its own output is solid ground truth, independent of the curl issue below — the first run
+printed "GATE_PASSWORD added to .env.", and all 3 subsequent runs (re-triggered while chasing
+the verification failure) printed "GATE_PASSWORD already set in .env — leaving it untouched.",
+which only happens if the line is genuinely present. `artisan config:cache` also reported
+"Configuration cached successfully" every time. So the actual goal of this workflow — the
+production `.env` carrying `GATE_PASSWORD=12345` and the config cache reflecting it — is
+confirmed, independent of everything below.
+
+**What failed, and why it was abandoned rather than chased further:** A same-runner `curl` to
+`https://netuqo.com/` (even a bare `GET /`, not just `/login`) failed identically on every
+attempt — 1 plain try, 4 retries with `--retry-all-errors`, then a `--tlsv1.2 --tls-max 1.2`
+pin — always the exact same `SSL routines::tlsv1 alert internal error`, the server sending a
+TLS alert immediately after the client's TLS handshake `Client Hello`, before any certificate
+exchange. That timing rules out a curl/OpenSSL TLS-version mismatch (the actual first guess,
+since the error text pattern-matches known OpenSSL-3.0-vs-old-Apache-TLS-1.3 issues) — a
+version-negotiation failure wouldn't reject the ClientHello outright the same way regardless
+of which version was offered. Reads instead like the server (or something in front of it —
+IONOS's own WAF/anti-bot layer is a plausible candidate) rejecting the connection based on
+where it's coming from: this repo's CI has never actually made an HTTP request to netuqo.com
+from a GitHub Actions runner before (`deploy.yml` only ever does SFTP + SSH, never curls the
+public URL), so this may be the first time this exact traffic pattern (a cloud/datacenter IP,
+which GitHub Actions runners are) was tried against production at all — many hosts block or
+challenge exactly that traffic class to cut down on bot/scraper load, which is a plausible,
+mundane explanation requiring no code change here to "fix."
+
+**Decision:** Stop iterating on curl flags — three different theories (transient flake, TLS
+version, then TLS pin) were each tried and disproven in turn, and the failure signature
+(instant rejection at ClientHello, identical regardless of TLS version pinned) doesn't point
+at anything this session can fix from where it's running. Removed the disposable
+`ionos-set-gate-password.yml` workflow — its actual job (setting the password) is done and
+independently confirmed via the SSH step's own output, which is what mattered. Left final
+end-to-end confirmation (visiting netuqo.com and logging in with the configured password) to
+the user's own browser, which won't hit whatever's rejecting datacenter-origin connections.
+
+**Simplicity impact:** None on the product. Time-boxing a debugging tangent once it stopped
+producing new information, rather than continuing to guess — the workflow's actual purpose
+was already achieved and confirmed through a channel unaffected by the curl issue.
