@@ -1063,3 +1063,33 @@ its own centered branding moment.
 **Simplicity impact:** Net reduction — one fewer image per page load (footer no longer loads
 a second logo variant), one visual brand anchor instead of two, two fewer asset files in the
 repo.
+
+---
+
+## 2026-09-03 — Consolidated "Abmelden" + night mode into one header menu
+
+**Reason:** User felt the header row read as too crowded (logo + 5 nav words + "Abmelden" +
+a toggle icon), with "Einstellungen" (Settings) still to come later. Proposed and agreed:
+collapse the utility items behind a single icon-triggered dropdown (⋮) instead of adding them
+inline one by one — the menu can absorb Einstellungen later without the header growing again.
+Reused the same Alpine.js `x-data`/`x-show`/`@click.outside` pattern already used for
+task-row's inline area/date editors, rather than introducing a new interaction convention.
+
+**Bug caught before shipping:** the first version positioned the menu as a normal flex child
+(`ml-auto` to push it right). On narrow viewports the nav wraps onto its own line and the
+menu button — alone on its own flex line — landed at the far *left* instead of the right
+(`justify-content: space-between` has nothing to distribute for a single item), so its
+dropdown rendered clipped off the left edge of the screen. Fixed by taking the menu out of
+the flex flow entirely: it's `absolute`-positioned to the header's top-right corner, with the
+logo+nav flex block given `padding-right` to leave it room — so its position no longer
+depends on how nav happens to wrap. Caught by actually screenshotting a 390px mobile
+viewport, not just desktop.
+
+**Verified:** full test suite (45 tests) and Pint green (no PHP touched); real-browser checks
+— menu opens/closes, closes on outside click, closes after selecting the theme toggle, theme
+toggle and logout both still work, correct in both themes, and correct at both a 900px
+desktop and a 390px mobile viewport (the exact case that exposed the positioning bug).
+
+**Simplicity impact:** One more layer of interaction (a click to open the menu before reading
+Nachtmodus/Abmelden) in exchange for a header that stays visually calm as more utility items
+(Einstellungen) join later — the user's own trade-off, made explicitly aware beforehand.
