@@ -26,6 +26,18 @@ jobs:
                 echo \$c['name'].' ('.\$c['type'].', nullable='.(\$c['nullable']?'yes':'no').\")\n\";
               }
             "
+            echo "--- migrations table state ---"
+            /usr/bin/php8.4-cli artisan tinker --execute="
+              \$rows = \Illuminate\Support\Facades\DB::table('migrations')->where('migration', 'like', '%enrich_activities%')->get();
+              echo \$rows->count().' matching rows'.\"\n\";
+              foreach (\$rows as \$r) { echo json_encode(\$r).\"\n\"; }
+            "
+            echo "--- task_id vs task_id_new integrity ---"
+            /usr/bin/php8.4-cli artisan tinker --execute="
+              \$total = \Illuminate\Support\Facades\DB::table('activities')->count();
+              \$mismatched = \Illuminate\Support\Facades\DB::table('activities')->whereColumn('task_id', '!=', 'task_id_new')->orWhereNull('task_id_new')->count();
+              echo 'total='.\$total.' mismatched_or_null='.\$mismatched.\"\n\";
+            "
             echo "--- reproduce store() flow ---"
             /usr/bin/php8.4-cli artisan tinker --execute="
               try {
