@@ -643,3 +643,51 @@ would then fail the whole deploy step, which is correct but is its own decision)
 **Simplicity impact:** None on the product. The migration fix is more defensive (extra
 `hasColumn` guards) than a from-scratch version would need, but that's the direct, minimal
 cost of safely resuming from a real stuck production state without a manual DB intervention.
+
+---
+
+## 2026-09-03 — The fix above was still wrong; real root cause found by installing MariaDB locally
+
+**Bug:** The previous entry's fix ("drop the foreign key before the index, in that order")
+was deployed and **still failed in production**, with the identical error. The stated root
+cause was wrong.
+
+**Real root cause, found by installing a real MariaDB server in this session's sandbox and
+reproducing production's exact stuck state against it** (SQLite genuinely cannot surface this
+class of bug — it doesn't have MySQL's supporting-index requirement for foreign keys at all):
+`activities`' composite `(user_id, task_id)` index isn't only there for the `task_id` foreign
+key — it's also the *only* index InnoDB has that leads with `user_id`, so it's simultaneously
+the required supporting index for the separate, untouched `activities_user_id_foreign`
+(→ `users`) foreign key. Dropping it fails with "needed in a foreign key constraint" no
+matter what order the `task_id` foreign key is dropped in, because removing it would leave
+the `user_id` foreign key without any index at all. This wasn't a statement-ordering bug —
+Laravel also compiles multiple operations added in one `Schema::table()` closure into a
+single `ALTER TABLE` with comma-separated clauses, and MySQL validates each `DROP INDEX`
+clause against the constraint set as it stood *before* the statement, so even splitting the
+drops into separate closures didn't fix it on its own.
+
+**Fix, verified against real MySQL/MariaDB this time (not just SQLite):** add a standalone
+index on `user_id` alone *before* touching the composite index, so `activities_user_id_foreign`
+has something else to depend on; drop the foreign key, then the composite index (now safe),
+then the column (which auto-removes the now-orphaned single-column index MySQL had created
+for the dropped `task_id` foreign key); rename the temp column back to `task_id`; recreate
+the foreign key and the composite index; drop the temporary standalone `user_id` index, now
+redundant since the recreated composite index covers it again. Tested three ways against a
+real MariaDB instance installed for this purpose: a clean `migrate:fresh`, a hand-reproduced
+copy of production's exact stuck state (verified byte-for-byte identical schema before
+running), and an up→down→up cycle.
+
+**Why this matters for future sessions:** the previous entry's "fix" looked
+plausible and reused the right vocabulary (foreign key, index, order) without actually being
+verified against MySQL — it was still reasoning from the SQLite-only symptom. When a MySQL-
+specific schema bug shows up, don't reason about it in the abstract or test only against
+SQLite (local dev's default) — install a real MySQL/MariaDB server in the sandbox and
+reproduce the *exact* failing state before trusting a fix. This session had never done that
+before this incident; it should be the default move for any schema change touching foreign
+keys or indexes from now on, not just when a first fix attempt already failed.
+
+**Rejected alternative:** none — this was found by direct reproduction, not reasoned from
+alternatives.
+
+**Simplicity impact:** None on the product. One extra temporary index, created and dropped
+within the same migration; no lasting schema complexity.
