@@ -1,0 +1,49 @@
+name: Diagnose 500 on task save
+
+on:
+  push:
+    branches: [claude/netuqo-github-ionos-setup-uds6a2]
+    paths: [.github/workflows/diag-500.yml]
+  workflow_dispatch: {}
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Inspect activities schema and reproduce task creation on the server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.IONOS_SSH_HOST }}
+          port: ${{ secrets.IONOS_SSH_PORT }}
+          username: ${{ secrets.IONOS_SSH_USER }}
+          password: ${{ secrets.IONOS_SSH_PASSWORD }}
+          script: |
+            cd ${{ secrets.IONOS_TARGET_DIR }}
+            echo "--- activities columns ---"
+            /usr/bin/php8.4-cli artisan tinker --execute="
+              foreach (\Illuminate\Support\Facades\Schema::getColumns('activities') as \$c) {
+                echo \$c['name'].' ('.\$c['type'].', nullable='.(\$c['nullable']?'yes':'no').\")\n\";
+              }
+            "
+            echo "--- reproduce store() flow ---"
+            /usr/bin/php8.4-cli artisan tinker --execute="
+              try {
+                \$u = App\Models\User::first();
+                \$task = \$u->tasks()->create(['title' => 'DIAG TEST TASK']);
+                echo 'task created id='.\$task->id.\"\n\";
+                \$task->activities()->create([
+                  'user_id' => \$task->user_id,
+                  'action' => 'created',
+                  'context' => ['title' => \$task->title, 'area' => \$task->area, 'due_at' => \$task->due_at?->format('Y-m-d')],
+                ]);
+                echo 'activity logged OK'.\"\n\";
+                \$task->delete();
+                echo 'cleanup OK'.\"\n\";
+              } catch (\Throwable \$e) {
+                echo 'EXCEPTION: '.get_class(\$e).\": \".\$e->getMessage().\"\n\";
+                echo \$e->getTraceAsString().\"\n\";
+              }
+            "
+            echo "--- recent laravel log tail ---"
+            tail -n 60 storage/logs/laravel.log || echo "no log file"
