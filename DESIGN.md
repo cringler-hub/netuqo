@@ -12,7 +12,7 @@ affordances, a search bar, and task cards carrying fields netuqo's data model do
 "Serene Daily Reflection" progress-ring footer. None of that is built — implementing it would
 mean inventing features and a data model netuqo doesn't have, which CLAUDE.md rules out. What
 *is* adopted: colors, typography, shape language, spacing rhythm, and elevation — applied to
-the existing five screens (Heute, Diese Woche, Diesen Monat, Später, Erledigt) and existing
+the existing five screens (Heute, Diese Woche, Dieser Monat, Später, Erledigt) and existing
 components (capture bar, task row, area filter), unchanged in structure and functionality.
 Ideas for the deferred pieces are logged in BACKLOG.md, not built. As before: no 12-column
 grid or sidebar navigation applies here — netuqo stays a single, calm column (`max-w-2xl`).
@@ -101,6 +101,23 @@ ink, replacing the previous dark "Premium Noir" palette.
   states (the done-checkbox fill and checkmark) — a quiet confirmation, not an alarm color.
 - **Error (`#ba1a1a`):** Overdue tasks and validation errors.
 
+### Night mode
+
+A manually-toggled dark theme, reusing the exact values from "Premium Noir" (netuqo's
+original dark theme, see DECISIONS.md) rather than a new palette: background `#0b1326`,
+surfaces `#131b2e`/`#171f33`, accent violet `#8b5cf6`, success `#8fbfa6`, danger `#ffb4ab`,
+text `#dae2fd`/`#cbc3d7`. Toggled via a sun/moon button in the header (`document.documentElement`
+gets a `dark` class, persisted in `localStorage`); defaults to the OS's `prefers-color-scheme`
+on first visit if nothing is stored yet. An inline `<script>` in `<head>` applies the class
+before first paint to avoid a flash of the wrong theme. Shape, spacing, and typography are
+identical in both modes — only color tokens change, via CSS custom-property overrides under
+a `.dark` selector (`resources/css/app.css`), not by duplicating markup.
+
+Both logo SVGs (`public/images/logo.svg` / `logo-claim.svg`) have their ink color hardcoded,
+so each has a `-dark` variant with the ink recolored for a dark background (`logo-dark.svg` /
+`logo-claim-dark.svg`); the two are swapped via `dark:hidden` / `hidden dark:block`, the same
+pattern used for the sun/moon icon swap.
+
 ## Typography
 
 A three-family pairing: **Newsreader** for headlines, **Open Sans** for the one-line claim
@@ -168,3 +185,9 @@ Depth via **hairline borders + soft ambient shadow**, not heavy drop-shadows:
 ### Input Fields
 - Frameless within the capture card, or pill-enclosed for inline edits (date, chips).
   Focus state: 1.5px accent ring, no heavy glow.
+
+### Footer
+- One quiet row on every screen, centered, hairline top border, small muted text: the
+  logo-with-claim lockup, then `Impressum · Datenschutz · AGB · Kontakt`. Those four link
+  to placeholder pages (see BACKLOG.md/DECISIONS.md) — real content is pending, not a design
+  decision.

@@ -14,6 +14,11 @@ Route::get('/month', [MonthController::class, 'index'])->name('month');
 Route::get('/later', [LaterController::class, 'index'])->name('later');
 Route::get('/done', [DoneController::class, 'index'])->name('done');
 
+Route::view('/impressum', 'legal', ['heading' => 'Impressum'])->name('impressum');
+Route::view('/datenschutz', 'legal', ['heading' => 'Datenschutz'])->name('datenschutz');
+Route::view('/agb', 'legal', ['heading' => 'AGB'])->name('agb');
+Route::view('/kontakt', 'legal', ['heading' => 'Kontakt'])->name('kontakt');
+
 Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
 Route::patch('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
 Route::post('/tasks/{task}/complete', [TaskController::class, 'complete'])->name('tasks.complete');

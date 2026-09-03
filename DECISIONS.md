@@ -893,3 +893,88 @@ load, one more thing to keep consistent) — flagging per CLAUDE.md's "report...
 risks" even though this was an explicit, deliberate user request, not a suggestion of mine.
 Implemented as asked rather than pushing back, since it's a small, easily-reversible content
 change, not a structural one — no new screens, components, or data.
+
+---
+
+## 2026-09-03 — Added a night mode (manual dark-theme toggle)
+
+**Context:** User asked for a "Nightmodus." netuqo only had one theme at the time — the
+light "Executive Intelligence" refresh — after "Premium Noir" (the original dark theme) was
+fully replaced earlier the same day.
+
+**Decision:** Rather than design a new dark palette, night mode reuses "Premium Noir"'s
+exact values (background `#0b1326`, surfaces `#131b2e`/`#171f33`, accent violet `#8b5cf6`,
+success `#8fbfa6`, danger `#ffb4ab`, text `#dae2fd`/`#cbc3d7`) as the `.dark` override. It
+was already a complete, deliberately-designed theme for this exact app, still fresh in git
+history — reusing it is both less work and more consistent than inventing a second dark
+palette from scratch.
+
+**Mechanism:** `resources/css/app.css` gained `@custom-variant dark (&:where(.dark, .dark
+*));` (class-based, not just `prefers-color-scheme`) and a `.dark { --color-*: ...; }` block
+overriding the same custom properties the light theme's `@theme` block sets — so every
+existing utility class (`bg-surface`, `text-text-muted`, etc.) picks up the dark values
+automatically; no `dark:` variant needed on every element, only on the handful of things that
+differ structurally (icon swap, logo swap). A sun/moon toggle button sits in the header
+(plain `onclick`, no Alpine — this is a single DOM mutation, doesn't need a component); it
+adds/removes `dark` on `<html>` and stores the choice in `localStorage`. An inline `<script>`
+in `<head>` (must run before first paint, so it's a blocking script, not deferred) applies
+the stored choice, or falls back to `prefers-color-scheme` if nothing is stored yet — this
+avoids a flash of the wrong theme on load.
+
+**Bug caught before shipping:** both logo SVGs hardcode their ink color (`#0B1231`) as a
+literal path fill, not `currentColor` — because they're loaded via `<img src>`, not inlined,
+so they don't participate in the page's CSS cascade at all; a naive dark-mode toggle left
+both the header and footer wordmark nearly invisible (dark ink on dark background). Fixed by
+generating `logo-dark.svg` / `logo-claim-dark.svg` (ink recolored to the dark theme's text
+colors via `sed` on the two known fill hexes) and swapping light/dark pairs with `dark:hidden`
+/ `hidden dark:block` — the same pattern already used for the sun/moon icons. Caught by
+actually looking at a dark-mode screenshot, not just checking for console errors — a purely
+mechanical check (no JS errors, tests green) would have shipped this illegible.
+
+**Verified:** real browser — default light on a light-`prefers-color-scheme` context with no
+stored choice; toggle sets `dark` class + `localStorage`; reload preserves the dark choice
+(no flash); `getComputedStyle` on `<body>` confirms the exact dark background hex; both logo
+variants legible in both modes; full test suite (39 tests) and Pint green (no PHP touched).
+
+**Simplicity impact:** None on the product's functionality — same screens, same data, same
+nav. Real, worthwhile UI complexity: two theme states to keep visually consistent going
+forward (any future color token addition needs a `.dark` counterpart) and two extra logo
+asset files. Justified by reusing an already-designed palette rather than a new one, and by
+this being a well-understood, expected feature (not scope creep).
+
+---
+
+## 2026-09-03 — Added a footer with legal-page links (placeholders, real content pending)
+
+**Context:** User asked for a footer with `netuqo · Impressum · Datenschutz · AGB ·
+Kontakt`, using the logo-with-claim lockup for "netuqo." None of the four legal routes
+existed yet.
+
+**Decision:** Built the footer as asked, and added the four routes
+(`Route::view(...)`, no controller needed for static placeholder content) pointing to one
+shared `resources/views/legal.blade.php` view, rather than linking to `#` or omitting the
+routes — a footer with dead links is worse than no footer. The placeholder page explicitly
+says "Inhalt folgt" ("content pending") and that real content requires real legal input.
+**Deliberately did not write real Impressum/Datenschutz/AGB/Kontakt content**: an Impressum
+needs a real legal entity name, address, and register/VAT numbers (Impressumspflicht under
+German law); Datenschutz and AGB need real legal text; Kontakt needs a real address/email.
+Fabricating any of this and shipping it to netuqo.com (a live, public site) would be actively
+misleading, not just an empty stub — confirmed with the user mid-task, who agreed placeholders
+are correct for now. Logged in BACKLOG.md so a future session doesn't either forget these
+need real content, or invent some to "finish" the page.
+
+**What changed:** `routes/web.php` (+4 routes), `resources/views/legal.blade.php` (new,
+shared placeholder view), footer markup in `app.blade.php` (logo+claim lockup, four links,
+hairline top border, centered, muted — matches the existing quiet/restrained component
+language), `public/images/logo-claim.svg` (copied from the `resources/images/brand/` master
+so it's web-servable, same pattern as the header logo) plus its `-dark` variant (see the
+night-mode entry above — the claim lockup has the same hardcoded-ink problem the header logo
+had). `tests/Feature/LegalPagesTest.php` covers the footer's presence and all four routes.
+
+**Verified:** full test suite (39 tests, including the 5 new ones) and Pint green; all four
+routes return 200 with the right heading in a real browser; footer renders correctly in both
+light and dark mode.
+
+**Simplicity impact:** Four new routes/pages, but they're placeholders, not new product
+surface — no new interaction model, no new data. The honest alternative (no footer, or a
+footer with `#` links) would have been worse, not simpler in any way that matters.

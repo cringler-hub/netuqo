@@ -50,3 +50,14 @@ adopted — see DESIGN.md. The mockup also showed the following, none of it buil
 - **"Serene Daily Reflection" progress-ring + completion-count footer.** Problem: unclear —
   a nice touch, but a new always-visible widget. Simplicity risk: edges toward "dashboard,"
   which MANIFESTO.md/PRODUCT.md explicitly rule out. Decision: not now.
+
+## Real content needed for the footer's legal pages (2026-09-03)
+
+`/impressum`, `/datenschutz`, `/agb`, `/kontakt` are live routes with an honest "content
+pending" placeholder (`resources/views/legal.blade.php`) — added so the new footer (explicit
+user request) doesn't link to nothing. **Not filled in on purpose:** this session cannot
+invent an Impressum (legal entity, address, register/VAT numbers — Impressumspflicht under
+German law), real Datenschutz/AGB legal text, or real contact details — that needs the
+user (or their legal/tax advisor) to supply actual content. Decision: keep as placeholders
+until real copy is provided; do not fabricate anything that reads as real legal/company
+information in the meantime, on this or any other page.

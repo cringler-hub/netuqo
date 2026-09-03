@@ -3,6 +3,9 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+/* Manually-toggled dark mode: a `dark` class on <html>, not just prefers-color-scheme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
  * netuqo design tokens — "Executive Intelligence" (see DESIGN.md).
  * Warm-white surfaces, editorial Newsreader headlines over Manrope UI text,
@@ -25,6 +28,25 @@
     --color-border: #eaebed;
 
     --radius-task: 2rem;
+}
+
+/*
+ * Night mode — reuses the values from "Premium Noir", netuqo's original dark theme,
+ * rather than inventing a new dark palette. Same accent role (violet), softened for
+ * legibility on a dark ground. Shape, spacing, and typography are unchanged — only
+ * color shifts.
+ */
+.dark {
+    --color-background: #0b1326;
+    --color-surface: #131b2e;
+    --color-surface-elevated: #171f33;
+    --color-primary: #8b5cf6;
+    --color-primary-hover: #3b82f6;
+    --color-success: #8fbfa6;
+    --color-danger: #ffb4ab;
+    --color-text: #dae2fd;
+    --color-text-muted: #cbc3d7;
+    --color-border: rgb(255 255 255 / 10%);
 }
 
 body {
