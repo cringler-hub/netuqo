@@ -553,3 +553,46 @@ two rejected alternatives; no further alternative was proposed.
 accepted as an explicit trade the user made. Everything else about the interaction stays as
 simple as before: still one click to see any bucket, still plain server-rendered pages with
 real URLs, no new fields or concepts.
+
+---
+
+## 2026-09-03 — Activity log widened: every field change, create, delete; deleted tasks keep their history
+
+**Decision:** `TaskController` now writes an `activities` row for every mutation, not just
+complete/reopen:
+- `store()` logs `created` with a `context` snapshot (title, area, due_at).
+- `update()` logs one row per field that actually changed (`title_changed`,
+  `due_at_changed`, `area_changed`), each with the real old/new value — a no-op PATCH (same
+  value resubmitted) logs nothing.
+- `complete()`/`reopen()` gained a `context` payload (area, and for `complete()` whether the
+  task was overdue at that moment) so each event is self-contained instead of requiring a
+  reader to replay other events to know the task's state at that point.
+- `destroy()` now logs a `deleted` row (title in `old_value`, area/due_at/status in
+  `context`) *before* deleting the task.
+
+Schema: `activities` gained a `context` (nullable JSON) column, and `task_id`'s foreign key
+changed from `cascadeOnDelete()` to nullable + `nullOnDelete()` — migration
+`2026_09_03_000001_enrich_activities_logging` preserves every existing `task_id` value via a
+temp column + rename rather than dropping and recreating the column, since production already
+has real completed/reopened history that a naive drop would have silently wiped.
+
+**Reason:** User's explicit goal — build a data foundation now that supports meaningful
+AI-driven analysis later (patterns like reschedule frequency, completion timeliness,
+category drift). None of that is buildable retroactively, so the raw events need to exist
+from the start even though no analysis feature consumes them yet.
+
+**This reverses part of the "Delete a task" decision above** ("cascades to its activities
+rows ... no orphaned audit rows") — that reasoning no longer holds now that a deleted task's
+own history is exactly the kind of data worth keeping. Recorded here rather than editing that
+entry, per this file's append-only rule.
+
+**Rejected alternative:** Full event-sourcing with a complete JSON snapshot of the task on
+every change — rejected as more than this stage needs; field-level deltas plus small
+per-event context cover the realistic analysis cases without a schema/architecture change.
+Also rejected: a scheduled job that detects and logs "task became overdue" transitions —
+overdue-ness isn't a user action, so this would be a new kind of background process; deferred
+until something actually needs it, since `due_at_changed` history plus `completed_at` already
+lets "was this overdue when finished?" be reconstructed after the fact.
+
+**Simplicity impact:** No user-facing change at all — this is pure backend/data-model work.
+Read paths (Heute/Woche/Monat/Später/Erledigt) are untouched.

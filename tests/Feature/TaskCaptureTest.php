@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Activity;
 use App\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -258,5 +259,116 @@ class TaskCaptureTest extends TestCase
         $this->post(route('tasks.complete', $task));
 
         $this->get('/done')->assertOk()->assertSee('Erledigt · '.now()->format('d.m.Y'));
+    }
+
+    public function test_capturing_a_task_logs_a_created_activity(): void
+    {
+        $this->post('/tasks', ['title' => 'Angebot senden', 'area' => 'business', 'due_at' => '2026-09-10']);
+        $task = Task::first();
+
+        $activity = Activity::where('task_id', $task->id)->where('action', 'created')->first();
+
+        $this->assertNotNull($activity);
+        $this->assertSame([
+            'title' => 'Angebot senden',
+            'area' => 'business',
+            'due_at' => '2026-09-10',
+        ], $activity->context);
+    }
+
+    public function test_changing_a_tasks_title_logs_the_old_and_new_value(): void
+    {
+        $this->post('/tasks', ['title' => 'Alter Titel']);
+        $task = Task::first();
+
+        $this->patch(route('tasks.update', $task), ['title' => 'Neuer Titel']);
+
+        $this->assertDatabaseHas('activities', [
+            'task_id' => $task->id,
+            'action' => 'title_changed',
+            'old_value' => 'Alter Titel',
+            'new_value' => 'Neuer Titel',
+        ]);
+    }
+
+    public function test_changing_a_tasks_due_date_logs_the_old_and_new_value(): void
+    {
+        $this->post('/tasks', ['title' => 'Workshop vorbereiten', 'due_at' => '2026-09-10']);
+        $task = Task::first();
+
+        $this->patch(route('tasks.update', $task), ['due_at' => '2026-09-15']);
+
+        $this->assertDatabaseHas('activities', [
+            'task_id' => $task->id,
+            'action' => 'due_at_changed',
+            'old_value' => '2026-09-10',
+            'new_value' => '2026-09-15',
+        ]);
+    }
+
+    public function test_updating_a_task_without_actually_changing_a_field_logs_nothing(): void
+    {
+        $this->post('/tasks', ['title' => 'Unverändert', 'area' => 'business']);
+        $task = Task::first();
+        Activity::query()->delete();
+
+        $this->patch(route('tasks.update', $task), ['title' => 'Unverändert']);
+
+        $this->assertDatabaseCount('activities', 0);
+    }
+
+    public function test_completing_an_overdue_task_logs_that_it_was_overdue(): void
+    {
+        $this->post('/tasks', ['title' => 'Rechnung schreiben', 'area' => 'business', 'due_at' => now()->subDays(2)->format('Y-m-d')]);
+        $task = Task::first();
+
+        $this->post(route('tasks.complete', $task));
+
+        $activity = Activity::where('task_id', $task->id)->where('action', 'completed')->first();
+
+        $this->assertNotNull($activity);
+        $this->assertSame(['area' => 'business', 'was_overdue' => true], $activity->context);
+    }
+
+    public function test_completing_a_task_due_today_logs_that_it_was_not_overdue(): void
+    {
+        $this->post('/tasks', ['title' => 'Angebot prüfen', 'due_at' => now()->format('Y-m-d')]);
+        $task = Task::first();
+
+        $this->post(route('tasks.complete', $task));
+
+        $activity = Activity::where('task_id', $task->id)->where('action', 'completed')->first();
+
+        $this->assertSame(['area' => null, 'was_overdue' => false], $activity->context);
+    }
+
+    public function test_reopening_a_task_logs_its_area(): void
+    {
+        $this->post('/tasks', ['title' => 'Termin verschieben', 'area' => 'private', 'due_at' => now()->format('Y-m-d')]);
+        $task = Task::first();
+        $this->post(route('tasks.complete', $task));
+
+        $this->post(route('tasks.reopen', $task));
+
+        $this->assertDatabaseHas('activities', [
+            'task_id' => $task->id,
+            'action' => 'reopened',
+            'old_value' => 'done',
+            'new_value' => 'open',
+        ]);
+    }
+
+    public function test_deleting_a_task_logs_it_and_the_log_survives_the_deletion(): void
+    {
+        $this->post('/tasks', ['title' => 'Alten Entwurf verwerfen', 'area' => 'private', 'due_at' => now()->format('Y-m-d')]);
+        $task = Task::first();
+
+        $this->delete(route('tasks.destroy', $task));
+
+        $this->assertDatabaseMissing('tasks', ['id' => $task->id]);
+        $activity = Activity::where('action', 'deleted')->where('old_value', 'Alten Entwurf verwerfen')->first();
+        $this->assertNotNull($activity);
+        $this->assertNull($activity->task_id);
+        $this->assertSame('private', $activity->context['area']);
     }
 }

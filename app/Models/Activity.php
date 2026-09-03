@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'action', 'old_value', 'new_value'])]
+#[Fillable(['user_id', 'action', 'old_value', 'new_value', 'context'])]
 class Activity extends Model
 {
     public $timestamps = false;
@@ -15,6 +15,7 @@ class Activity extends Model
     {
         return [
             'created_at' => 'datetime',
+            'context' => 'array',
         ];
     }
 
