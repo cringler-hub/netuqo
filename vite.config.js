@@ -15,6 +15,9 @@ export default defineConfig({
                 bunny('Newsreader', {
                     weights: [400, 500],
                 }),
+                bunny('Open Sans', {
+                    weights: [400],
+                }),
             ],
         }),
         tailwindcss(),

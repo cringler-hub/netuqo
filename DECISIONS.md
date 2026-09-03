@@ -851,3 +851,45 @@ unaffected (no PHP/logic touched).
 
 **Simplicity impact:** None — one `<img>` tag replaces an `<img>` + `<span>` pair; net
 reduction in header markup.
+
+---
+
+## 2026-09-03 — New screen claims (subtitles), set in a third typeface (Open Sans)
+
+**Context:** User supplied exact copy for the one-line "claim" under each screen's headline
+(previously ad hoc sentences like "Was ist wichtig." / "Alles danach, oder ganz ohne
+Termin.") and asked for them to render in Open Sans specifically — a third typeface
+alongside the existing Newsreader (headlines) / Manrope (everything else) pairing.
+
+**What changed:** `vite.config.js` gained a third self-hosted `bunny()` font (Open Sans,
+weight 400). `app.css` gained `--font-claim`, auto-generating a `font-claim` Tailwind
+utility (same mechanism as the existing `font-headline`). All five screens' subtitle `<p>`
+now use `font-claim` and the new copy:
+
+| Screen | Claim |
+|---|---|
+| Heute | Was jetzt zählt. |
+| Diese Woche | Was als Nächstes zählt. |
+| Dieser Monat | Was im Blick bleiben soll. |
+| Später | Was noch Zeit hat. |
+| Erledigt | Was geschafft ist, bleibt. |
+
+The user's table paired "Dieser Monat." with its claim, differing from the app's existing
+heading "Diesen Monat." (accusative). Read that as a deliberate grammar fix — nominative
+"Dieser Monat" matches the pattern "Diese Woche" already uses as a standalone heading — and
+applied it consistently: the H1, the page `<title>`, and the header nav link all now read
+"Dieser Monat". Not explicitly asked for beyond the table pairing; flagging this inference
+here in case it wasn't intended, though I don't believe it was — deliberately not touching
+this decision in a way that's hard to revert (a one-line find/replace).
+
+**Verified:** full local test suite (34 tests, none of which asserted on the old subtitle
+copy or "Diesen Monat") and Pint green; loaded in a real browser for all five screens,
+confirming the exact new copy renders and `getComputedStyle` reports
+`font-family: "Open Sans", ui-sans-serif, system-ui, sans-serif` on each claim; no console
+errors.
+
+**Simplicity impact:** A third font family is real, ongoing complexity (one more asset to
+load, one more thing to keep consistent) — flagging per CLAUDE.md's "report... simplicity
+risks" even though this was an explicit, deliberate user request, not a suggestion of mine.
+Implemented as asked rather than pushing back, since it's a small, easily-reversible content
+change, not a structural one — no new screens, components, or data.

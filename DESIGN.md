@@ -49,6 +49,11 @@ typography:
     fontWeight: '400'
     lineHeight: '1.2'
     letterSpacing: -0.02em
+  claim:
+    fontFamily: Open Sans
+    fontSize: 16px
+    fontWeight: '400'
+    lineHeight: '1.6'
   body-md:
     fontFamily: Manrope
     fontSize: 15px
@@ -98,13 +103,26 @@ ink, replacing the previous dark "Premium Noir" palette.
 
 ## Typography
 
-A two-family pairing: **Newsreader** for editorial moments, **Manrope** for everything
-operational.
+A three-family pairing: **Newsreader** for headlines, **Open Sans** for the one-line claim
+under each headline, **Manrope** for everything operational.
 
 - **Headlines (Newsreader):** Screen titles only (e.g. "Heute.") — an intimate, considered
   tone rather than a generic SaaS header.
+- **Claims (Open Sans):** The single line under each screen's headline (e.g. "Was jetzt
+  zählt."), one per screen — see below. Explicit user choice, distinct from both the
+  headline and body typeface.
 - **Everything else (Manrope):** Task titles, inputs, chips, metadata — kept as the existing
   body typeface for legibility at a glance; unchanged from before this design refresh.
+
+### Screen headlines and claims
+
+| Screen | Headline | Claim |
+|---|---|---|
+| Heute | Heute. | Was jetzt zählt. |
+| Diese Woche | Diese Woche. | Was als Nächstes zählt. |
+| Dieser Monat | Dieser Monat. | Was im Blick bleiben soll. |
+| Später | Später. | Was noch Zeit hat. |
+| Erledigt | Erledigt. | Was geschafft ist, bleibt. |
 
 ## Layout & Spacing
 

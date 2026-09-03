@@ -1,7 +1,7 @@
 <x-layouts.app :title="'netuqo · Heute'" active="today">
     <section class="mb-10">
         <h1 class="font-headline text-3xl font-medium tracking-tight text-text">Heute.</h1>
-        <p class="mt-1 text-text-muted">Was ist wichtig.</p>
+        <p class="font-claim mt-1 text-text-muted">Was jetzt zählt.</p>
     </section>
 
     <section class="mb-10">
