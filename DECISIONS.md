@@ -822,3 +822,32 @@ glow class). Risk noted for future sessions: the source mockup will likely resur
 literal target ("make it look exactly like the file I sent") — DESIGN.md's disclaimer at the
 top exists specifically so a future session doesn't quietly build the deferred pieces by
 treating the mockup as ground truth.
+
+---
+
+## 2026-09-03 — Replaced the placeholder logo with the real netuqo wordmark
+
+**Context:** User uploaded real brand logo files directly to the GitHub repo root (a master
+SVG wordmark with the "q" styled as a magnifying glass, in the ink/accent-violet pair from
+the "Executive Intelligence" refresh, plus a version with the "Simply know what's next."
+claim beneath it, plus JPEG/PNG raster variants) and asked to use the one without the claim.
+This replaces the interim `logo-icon.png` (itself a crop-and-recolor of an earlier full
+lockup, per the 2026-09-02 entry above) plus the separately-set live "netuqo" text next to it
+in the header — the new SVG already is the full wordmark, so keeping the adjacent text span
+would have duplicated it.
+
+**What changed:** `public/images/logo.svg` (was `netuqo-logo-master.svg` at the repo root) is
+now the header logo, replacing both `public/images/logo-icon.png` and the header's plain-text
+"netuqo" span. `resources/images/logo-source.png` (the old lockup source, no longer needed
+now that a vector master exists) was removed. The claim version and raster variants
+(`netuqo-logo-claim-master.svg`, `netuqo-logo.jpg`, `netuqo-logo-claim.jpg`,
+`netuqo-logo-display.png`) were moved into `resources/images/brand/` as source masters for
+future use (e.g. a future favicon, social/email assets) rather than left loose at the repo
+root or deleted — none of them are wired into the app today.
+
+**Verified:** loaded in a real browser (no failed asset request, no console error),
+screenshotted to confirm sizing/alignment in the header; full test suite (34 tests) and Pint
+unaffected (no PHP/logic touched).
+
+**Simplicity impact:** None — one `<img>` tag replaces an `<img>` + `<span>` pair; net
+reduction in header markup.
