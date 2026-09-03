@@ -978,3 +978,72 @@ light and dark mode.
 **Simplicity impact:** Four new routes/pages, but they're placeholders, not new product
 surface — no new interaction model, no new data. The honest alternative (no footer, or a
 footer with `#` links) would have been worse, not simpler in any way that matters.
+
+---
+
+## 2026-09-03 — Added a temporary site-wide password gate
+
+**Context:** netuqo runs live and fully public at netuqo.com with real task data and zero
+access control (ROADMAP.md already lists real login — username/password, plus Google/
+Microsoft/Apple — as the next Phase-1 item, but that's real per-user authentication and
+hasn't been built yet). User asked whether a simple password screen made sense in the
+meantime; agreed, then asked for exactly that: one shared password, but the screen itself
+built to already look like the eventual real login screen (logo + claim, not a bare form),
+so it doesn't need a redesign when real login replaces it — just new fields/buttons added to
+the same card.
+
+**Decision:** Built as a session-based gate, deliberately **not** wired into
+`Illuminate\Auth`/the `users` table. The single "Owner" user (`Controller::currentUser()`)
+represents *who owns the data*, not *who's allowed to look at it right now* — those are
+different concerns, and conflating them would mean the throwaway gate password ("12345", per
+the user, obviously not meant to survive to the real login) would end up hashed into the
+real Owner account's password field, which is exactly the kind of thing that gets forgotten
+and left as a live credential. Kept fully separate: `config/gate.php` reads `GATE_PASSWORD`
+from env, `EnsureGateIsUnlocked` middleware (aliased `gate`) checks a plain
+`session('gate_unlocked')` flag, `GateController` compares the submitted password to the
+configured one with `hash_equals()` (constant-time; this is a shared secret, not a per-user
+bcrypt credential, so a plain comparison is the right tool, not overkill). An empty/unset
+`GATE_PASSWORD` fails closed — nobody gets in, rather than defaulting to open.
+
+**Scope:** All application routes (Heute/Diese Woche/Dieser Monat/Später/Erledigt + every
+`tasks.*` action) sit behind the `gate` middleware. `/impressum`, `/datenschutz`, `/agb`,
+`/kontakt` deliberately stay outside it — Impressumspflicht requires the Impressum be
+reachable without a login barrier, and there's nothing sensitive on those placeholder pages
+anyway. Added `/login` (show + authenticate) and `/logout`, and a small "Abmelden" link in
+the header (a gate with no way back out felt wrong once real sessions were in play, and it's
+a two-line addition — the actual session lifetime otherwise just relies on
+`SESSION_LIFETIME`, no other timeout logic).
+
+**Refactor done in service of this:** extracted the header's inline anti-flash theme
+`<script>` into `<x-theme-script>` and the footer into `<x-footer>`, and added a new,
+header-less `x-layouts.guest` layout for the gate screen — both so the gate screen (which
+must not show the main app's nav before someone's let in) still gets the same dark-mode
+support and footer/legal-page reachability as every other screen, without duplicating that
+markup a second time.
+
+**Not done, deliberately:** no visible (even if disabled) "Login with Google/Microsoft/
+Apple" buttons on the screen today. The user's brief was to make the screen look like the
+future login "so it doesn't need a redesign," not to preview non-functional buttons — and
+CLAUDE.md is explicit that non-working features shouldn't ship. The card's layout (logo,
+one input, one button, generous padding) is deliberately built so an email/username field
+above and social buttons below are a natural addition later, not a rebuild — read that as
+satisfying the brief's actual intent. Flagging this reading in case it wasn't what was meant.
+
+**Operational note, not yet done:** `GATE_PASSWORD` must still be added to the *production*
+`.env` on the IONOS server for the gate to do anything there — `.env` is intentionally
+outside the SFTP-synced/git-tracked deploy (see ARCHITECTURE.md), and this session
+deliberately did not SSH in and add it, since that's a one-off hand-edit of production
+config CLAUDE.md asks this session not to make unprompted. Local `.env` (gitignored) has
+`GATE_PASSWORD=12345` for dev/testing only.
+
+**Verified:** full test suite (45 tests, 6 new `GateTest` cases covering: guest redirect,
+legal pages staying reachable, wrong password, correct password, empty-configured-password
+fail-closed, and logout) and Pint green; full flow driven in a real browser — locked
+redirect, wrong-password error, correct-password unlock, reload keeping the session unlocked,
+logout re-locking, and the gate screen itself checked in both light and dark mode.
+
+**Simplicity impact:** One new screen, but it replaces "the whole app is public" with "the
+whole app requires one password" — a net reduction in exposure, not new complexity for the
+single real user. The session-vs-real-auth split is deliberate scaffolding for the real login
+work already on the roadmap, not speculative generality: when that ships, this gate's
+middleware and routes get deleted wholesale, not refactored around.

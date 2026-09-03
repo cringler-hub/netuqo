@@ -11,6 +11,13 @@ class TaskCaptureTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withSession(['gate_unlocked' => true]);
+    }
+
     public function test_today_shows_an_empty_state_with_no_tasks(): void
     {
         $this->get('/')->assertOk()->assertSee('Noch nichts erfasst');

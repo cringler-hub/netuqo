@@ -11,6 +11,8 @@ class LegalPagesTest extends TestCase
 
     public function test_footer_links_to_all_legal_placeholder_pages(): void
     {
+        $this->withSession(['gate_unlocked' => true]);
+
         $this->get('/')
             ->assertOk()
             ->assertSee('Impressum')
