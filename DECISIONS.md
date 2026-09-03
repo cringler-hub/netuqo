@@ -1047,3 +1047,19 @@ whole app requires one password" — a net reduction in exposure, not new comple
 single real user. The session-vs-real-auth split is deliberate scaffolding for the real login
 work already on the roadmap, not speculative generality: when that ships, this gate's
 middleware and routes get deleted wholesale, not refactored around.
+
+---
+
+## 2026-09-03 — Moved the logo+claim to the header, removed it from the footer
+
+**Reason:** User feedback after seeing both live — the logo+claim lockup appearing in both
+the header and the footer read as too heavy/dominant on every screen. Moved it to the header
+(where it's the brand's one clear anchor point, `h-10` to keep the claim line legible) and
+the footer is now just the four legal links, no logo. That left the plain (no-claim) logo
+(`public/images/logo.svg` / `logo-dark.svg`) with no reference anywhere in the app — deleted
+rather than left as orphaned assets; the `gate` screen keeps using the logo+claim version for
+its own centered branding moment.
+
+**Simplicity impact:** Net reduction — one fewer image per page load (footer no longer loads
+a second logo variant), one visual brand anchor instead of two, two fewer asset files in the
+repo.

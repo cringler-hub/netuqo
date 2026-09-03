@@ -15,8 +15,8 @@
         <header class="sticky top-0 z-10 border-b border-border bg-surface/85 backdrop-blur-xl">
             <div class="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-y-3 px-6 py-4">
                 <a href="{{ route('today') }}" class="flex items-center">
-                    <img src="{{ asset('images/logo.svg') }}" alt="netuqo" class="h-7 w-auto dark:hidden">
-                    <img src="{{ asset('images/logo-dark.svg') }}" alt="netuqo" class="hidden h-7 w-auto dark:block">
+                    <img src="{{ asset('images/logo-claim.svg') }}" alt="netuqo – Simply know what's next." class="h-10 w-auto dark:hidden">
+                    <img src="{{ asset('images/logo-claim-dark.svg') }}" alt="netuqo – Simply know what's next." class="hidden h-10 w-auto dark:block">
                 </a>
                 <nav class="flex w-full flex-wrap items-center gap-x-4 gap-y-1 text-sm sm:w-auto sm:flex-nowrap sm:gap-6">
                     <a href="{{ route('today') }}" class="{{ ($active ?? '') === 'today' ? 'font-semibold text-text' : 'text-text-muted hover:text-text' }}">Heute</a>
