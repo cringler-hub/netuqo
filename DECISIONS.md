@@ -596,3 +596,50 @@ lets "was this overdue when finished?" be reconstructed after the fact.
 
 **Simplicity impact:** No user-facing change at all — this is pure backend/data-model work.
 Read paths (Heute/Woche/Monat/Später/Erledigt) are untouched.
+
+---
+
+## 2026-09-03 — Fixed: production 500 on every task save, caused by the migration above
+
+**Bug:** User-reported: saving any task returned a raw 500 in production. Diagnosed with a
+temporary SSH diagnostic workflow (per this repo's established convention, removed after
+use) since `APP_DEBUG=false` hides the real error from the browser. Found the actual
+exception via `artisan tinker` on the server: `SQLSTATE[42S22]: Column not found: 1054
+Unknown column 'context' in 'INSERT INTO'`.
+
+**Root cause:** The `2026_09_03_000001_enrich_activities_logging` migration (above) drops
+`activities`' `user_id`+`task_id` index *before* dropping the `task_id` foreign key that
+depends on it. SQLite tolerates that order — which is all that was tested locally and in
+CI — but MySQL/InnoDB rejects it ("needed in a foreign key constraint"). On production this
+meant the migration got exactly one statement in (adding `task_id_new` and copying `task_id`
+into it), then failed and was never recorded as run. Because `deploy.yml`'s SSH script has no
+`set -e`, that failure didn't fail the deploy step, so it kept reporting green — including
+the deploy right after this bug shipped, which is why it went unnoticed until the user hit
+the live 500. Every subsequent deploy's `migrate --force` then retried the same broken
+migration and failed again, this time on "Duplicate column name 'task_id_new'", leaving
+`context` never added. Confirmed via the diagnostic: `migrations` table had zero rows for
+this migration, and `task_id`/`task_id_new` were fully intact and consistent (no data lost).
+
+**Fix:** Rewrote the migration's `up()` to (1) drop the foreign key before the index —
+the actual bug — and (2) guard every step with `Schema::hasColumn()` checks, so it resumes
+correctly whether starting completely fresh or from production's exact stuck state (verified
+both locally: a clean `migrate:fresh`, and a hand-reproduced copy of the stuck state with
+seeded data). Edited the migration file in place rather than adding a new one, since it had
+not successfully completed anywhere (0 rows in `migrations` on production, and CI always
+runs against a clean database so it never exercised the broken order).
+
+**Why this matters for future sessions:** a schema migration that only ran against SQLite
+locally/in CI is not verified for MySQL — index/FK drop order is one concrete way the two
+diverge. `deploy.yml`'s migration step has no `set -e`, so a failed `migrate --force` will
+NOT fail the GitHub Actions deploy step; "deploy succeeded" does not mean "migration
+succeeded" on this pipeline. If a future schema change causes unexplained production errors
+right after a deploy that reported green, check the migration first, not just the app code.
+
+**Rejected alternative:** Adding `set -e` to `deploy.yml`'s SSH script now — worth doing, but
+out of scope for this incident fix; noted here rather than bundled in, since it's a separate,
+deliberate change to the deploy pipeline's failure behavior (a genuinely failed migration
+would then fail the whole deploy step, which is correct but is its own decision).
+
+**Simplicity impact:** None on the product. The migration fix is more defensive (extra
+`hasColumn` guards) than a from-scratch version would need, but that's the direct, minimal
+cost of safely resuming from a real stuck production state without a manual DB intervention.
