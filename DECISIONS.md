@@ -775,3 +775,50 @@ introspection helper closures, precondition checks around each step) than a vers
 assumed a single known starting state, but that verbosity is the actual minimum needed to be
 correct on a non-transactional DDL engine that already drifted three times — not speculative
 generality.
+
+---
+
+## 2026-09-03 — Adopted a new light design system ("Executive Intelligence"), replacing "Premium Noir"
+
+**Context:** The user designed a new visual direction externally (via Google Stitch, based on
+a system-description brief this session wrote earlier) and supplied two files: a generated
+HTML mockup and a new `DESIGN.md` spec. It replaces the dark violet/blue-gradient "Premium
+Noir" theme (adopted 2026-09-02) with a light, editorial theme: warm-white surfaces, deep-navy
+ink text, a single sparing violet accent, Newsreader headlines over Manrope body text, pill
+shapes, and hairline-border/soft-shadow elevation instead of dark glassmorphism.
+
+**Scope decision:** The mockup went well beyond a re-skin — it also showed a 3-item nav
+(Heute/Erledigt/Suchen) replacing the current five time-horizon views, a Settings icon and
+profile avatar, a search bar, task cards carrying fields the data model doesn't have
+(monetary volume, time-of-day, category tags, situational context text), and a "Serene Daily
+Reflection" progress-ring footer. Asked the user explicitly whether to adopt the full mockup
+(including that new information architecture and implied data model) or only its visual
+language on the existing five screens/components. User chose: **visual language only** —
+colors, typography, shape, spacing, elevation on the existing structure; no nav changes, no
+invented fields, no Settings/profile/search stubs. This keeps the change a pure design-token
+swap rather than smuggling unrequested features in under cover of a visual refresh (see
+CLAUDE.md: "Do not invent features," "Implement only the agreed scope"). The deferred pieces
+are logged in BACKLOG.md, not built.
+
+**What changed:** `resources/css/app.css`'s `@theme` block (all color tokens, new
+`--font-headline` for Newsreader, `--radius-task` from `0.5rem` to `2rem`); `vite.config.js`
+(added the Newsreader `bunny()` font); the shared layout (`app.blade.php` — frosted sticky
+header, logo dropped its gradient-text treatment in favor of plain ink text since the user is
+still working on an actual logo mark separately); all five screen H1s switched to the new
+`font-headline`; the capture bar and task-row component's few hardcoded dark-mode colors
+(`rgba(143,191,166,0.2)`, `bg-white/5`) replaced with light-mode-correct equivalents; small
+inter-row spacing added to task lists to match the new design's list rhythm. `DESIGN.md`
+rewritten to document what was actually adopted, with an explicit note on what from the
+source mockup was deliberately not built and why.
+
+**Rejected alternative:** Adopting the mockup's Material-Symbols icon font for the capture
+bar's leading icon and header icons. Rejected — the app already expresses icons via inline
+SVG and plain characters, and CLAUDE.md asks not to add a dependency without clear need; an
+icon font is exactly the kind of addition a request for "the visual language" doesn't cover.
+
+**Simplicity impact:** None negative — same five screens, same components, same data model,
+same navigation. The button style got simpler (solid fill vs. a two-stop gradient + custom
+glow class). Risk noted for future sessions: the source mockup will likely resurface as a
+literal target ("make it look exactly like the file I sent") — DESIGN.md's disclaimer at the
+top exists specifically so a future session doesn't quietly build the deferred pieces by
+treating the mockup as ground truth.

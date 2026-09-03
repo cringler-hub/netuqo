@@ -12,7 +12,7 @@
                 <button
                     type="submit"
                     class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border text-transparent transition-colors hover:border-primary"
-                    :style="completing && 'border-color: var(--color-success); background-color: rgba(143, 191, 166, 0.2); color: var(--color-success)'"
+                    :style="completing && 'border-color: var(--color-success); background-color: #e6faf6; color: var(--color-success)'"
                 >
                     <span class="text-xs">✓</span>
                 </button>
@@ -77,7 +77,7 @@
                 type="button"
                 x-show="!editingArea"
                 @click="editingArea = true"
-                class="rounded-full bg-white/5 px-2 py-0.5 uppercase tracking-wide hover:text-text"
+                class="rounded-full bg-text/5 px-2 py-0.5 uppercase tracking-wide hover:text-text"
             >{{ $task->area ? ($task->area === 'business' ? 'Business' : 'Privat') : '+ Kategorie' }}</button>
             <form
                 x-show="editingArea"

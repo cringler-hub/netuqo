@@ -4,24 +4,26 @@
 @source '../../storage/framework/views/*.php';
 
 /*
- * netuqo design tokens — "Premium Noir" (see DESIGN.md).
- * Deep obsidian surfaces, a violet-to-blue accent gradient, sharp precise shapes.
+ * netuqo design tokens — "Executive Intelligence" (see DESIGN.md).
+ * Warm-white surfaces, editorial Newsreader headlines over Manrope UI text,
+ * a single sparing violet accent, pill-shaped interactive elements.
  */
 @theme {
     --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+    --font-headline: 'Newsreader', ui-serif, Georgia, serif;
 
-    --color-background: #0b1326;
-    --color-surface: #131b2e;
-    --color-surface-elevated: #171f33;
-    --color-primary: #8b5cf6;
-    --color-primary-hover: #3b82f6;
-    --color-success: #8fbfa6;
-    --color-danger: #ffb4ab;
-    --color-text: #dae2fd;
-    --color-text-muted: #cbc3d7;
-    --color-border: rgb(255 255 255 / 10%);
+    --color-background: #f7f8fa;
+    --color-surface: #ffffff;
+    --color-surface-elevated: #ffffff;
+    --color-primary: #5b3ce6;
+    --color-primary-hover: #4a2ecf;
+    --color-success: #22e0c5;
+    --color-danger: #ba1a1a;
+    --color-text: #0b1020;
+    --color-text-muted: #64748b;
+    --color-border: #eaebed;
 
-    --radius-task: 0.5rem;
+    --radius-task: 2rem;
 }
 
 body {
@@ -33,19 +35,13 @@ body {
     display: none;
 }
 
-.brand-gradient-text {
-    background-image: linear-gradient(to right, var(--color-primary), var(--color-primary-hover));
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-}
-
-.btn-gradient {
-    background-image: linear-gradient(to right, var(--color-primary), var(--color-primary-hover));
+.btn-primary {
+    background-color: var(--color-text);
+    color: var(--color-background);
     transition: filter 150ms ease, box-shadow 150ms ease;
 }
 
-.btn-gradient:hover {
-    filter: brightness(1.1);
-    box-shadow: 0 0 24px rgb(139 92 246 / 15%);
+.btn-primary:hover {
+    filter: brightness(1.2);
+    box-shadow: 0 4px 16px rgb(11 16 32 / 15%);
 }

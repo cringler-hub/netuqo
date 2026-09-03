@@ -12,6 +12,9 @@ export default defineConfig({
                 bunny('Manrope', {
                     weights: [400, 600, 700],
                 }),
+                bunny('Newsreader', {
+                    weights: [400, 500],
+                }),
             ],
         }),
         tailwindcss(),

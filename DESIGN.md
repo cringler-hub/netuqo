@@ -1,108 +1,67 @@
 # DESIGN.md
 
-netuqo's visual design system. Adopted 2026-09-02, replacing the original light/warm palette
-from the Whitepaper — see DECISIONS.md for why. `resources/css/app.css`'s `@theme` block is
-the token implementation; keep it in sync with this file if either changes. No 12-column grid
-or sidebar navigation from this spec applies here — netuqo stays a single, calm column
-(`max-w-2xl`), so only the color/type/shape/component language below was adopted, not the
-layout system. **Typography deviates from the spec below**: the three-typeface system
-(Hanken Grotesk / Manrope / JetBrains Mono) read as visually inconsistent in practice — the
-app now uses a single family, Manrope, everywhere. See DECISIONS.md.
+netuqo's visual design system. Adopted 2026-09-03, replacing the "Premium Noir" dark theme
+— see DECISIONS.md for why. `resources/css/app.css`'s `@theme` block is the token
+implementation; keep it in sync with this file if either changes.
+
+**Only the visual language below was adopted — not the full mockup it was drafted from.**
+The mockup (`code.html`, generated via Google Stitch) also showed a restructured navigation
+(Heute/Erledigt/Suchen instead of the current five time-horizon views), Settings and profile
+affordances, a search bar, and task cards carrying fields netuqo's data model doesn't have
+(monetary volume, time-of-day, free-form category tags, situational context text) plus a
+"Serene Daily Reflection" progress-ring footer. None of that is built — implementing it would
+mean inventing features and a data model netuqo doesn't have, which CLAUDE.md rules out. What
+*is* adopted: colors, typography, shape language, spacing rhythm, and elevation — applied to
+the existing five screens (Heute, Diese Woche, Diesen Monat, Später, Erledigt) and existing
+components (capture bar, task row, area filter), unchanged in structure and functionality.
+Ideas for the deferred pieces are logged in BACKLOG.md, not built. As before: no 12-column
+grid or sidebar navigation applies here — netuqo stays a single, calm column (`max-w-2xl`).
+An icon font (Material Symbols) appeared in the mockup but was not adopted — the app already
+expresses icons via inline SVG (delete) and plain characters (✓, ×, +), and CLAUDE.md asks not
+to add a dependency without clear need.
 
 ---
-name: Premium Noir
+name: Executive Intelligence
 colors:
-  surface: '#0b1326'
-  surface-dim: '#0b1326'
-  surface-bright: '#31394d'
-  surface-container-lowest: '#060e20'
-  surface-container-low: '#131b2e'
-  surface-container: '#171f33'
-  surface-container-high: '#222a3d'
-  surface-container-highest: '#2d3449'
-  on-surface: '#dae2fd'
-  on-surface-variant: '#cbc3d7'
-  inverse-surface: '#dae2fd'
-  inverse-on-surface: '#283044'
-  outline: '#958ea0'
-  outline-variant: '#494454'
-  surface-tint: '#d0bcff'
-  primary: '#d0bcff'
-  on-primary: '#3c0091'
-  primary-container: '#a078ff'
-  on-primary-container: '#340080'
-  inverse-primary: '#6d3bd7'
-  secondary: '#adc6ff'
-  on-secondary: '#002e6a'
-  secondary-container: '#0566d9'
-  on-secondary-container: '#e6ecff'
-  tertiary: '#ddb8ff'
-  on-tertiary: '#490081'
-  tertiary-container: '#b175ec'
-  on-tertiary-container: '#400071'
-  error: '#ffb4ab'
-  on-error: '#690005'
-  error-container: '#93000a'
-  on-error-container: '#ffdad6'
-  primary-fixed: '#e9ddff'
-  primary-fixed-dim: '#d0bcff'
-  on-primary-fixed: '#23005c'
-  on-primary-fixed-variant: '#5516be'
-  secondary-fixed: '#d8e2ff'
-  secondary-fixed-dim: '#adc6ff'
-  on-secondary-fixed: '#001a42'
-  on-secondary-fixed-variant: '#004395'
-  tertiary-fixed: '#f0dbff'
-  tertiary-fixed-dim: '#ddb8ff'
-  on-tertiary-fixed: '#2c0051'
-  on-tertiary-fixed-variant: '#62259b'
-  background: '#0b1326'
-  on-background: '#dae2fd'
-  surface-variant: '#2d3449'
+  background: '#f7f8fa'
+  surface: '#ffffff'
+  surface-container-low: '#f2f4f6'
+  on-surface: '#0b1020'
+  on-surface-variant: '#64748b'
+  outline: '#76767d'
+  outline-variant: '#eaebed'
+  primary: '#5b3ce6'
+  primary-hover: '#4a2ecf'
+  primary-container: '#f1efff'
+  success: '#22e0c5'
+  success-container: '#e6faf6'
+  error: '#ba1a1a'
 typography:
-  display-lg:
-    fontFamily: hankenGrotesk
-    fontSize: 48px
-    fontWeight: '700'
-    lineHeight: '1.1'
-    letterSpacing: -0.02em
   headline-lg:
-    fontFamily: hankenGrotesk
+    fontFamily: Newsreader
     fontSize: 32px
-    fontWeight: '600'
-    lineHeight: '1.2'
-  headline-md:
-    fontFamily: hankenGrotesk
-    fontSize: 24px
-    fontWeight: '600'
-    lineHeight: '1.3'
-  body-lg:
-    fontFamily: manrope
-    fontSize: 18px
-    fontWeight: '400'
-    lineHeight: '1.6'
-  body-md:
-    fontFamily: manrope
-    fontSize: 16px
-    fontWeight: '400'
-    lineHeight: '1.6'
-  label-md:
-    fontFamily: jetbrainsMono
-    fontSize: 14px
     fontWeight: '500'
-    lineHeight: '1.4'
-    letterSpacing: 0.05em
-  headline-lg-mobile:
-    fontFamily: hankenGrotesk
-    fontSize: 28px
-    fontWeight: '600'
     lineHeight: '1.2'
+    letterSpacing: -0.015em
+  display-lg:
+    fontFamily: Newsreader
+    fontSize: 44px
+    fontWeight: '400'
+    lineHeight: '1.2'
+    letterSpacing: -0.02em
+  body-md:
+    fontFamily: Manrope
+    fontSize: 15px
+    fontWeight: '400'
+    lineHeight: '1.6'
+  label-sm:
+    fontFamily: Manrope
+    fontSize: 10px
+    fontWeight: '700'
+    lineHeight: '1.4'
+    letterSpacing: 0.08em
 rounded:
-  sm: 0.125rem
-  DEFAULT: 0.25rem
-  md: 0.375rem
-  lg: 0.5rem
-  xl: 0.75rem
+  task: 2rem
   full: 9999px
 spacing:
   unit: 4px
@@ -112,79 +71,82 @@ spacing:
   lg: 24px
   xl: 40px
   2xl: 64px
-  gutter: 24px
-  margin-mobile: 16px
-  margin-desktop: 48px
 ---
 
 ## Brand & Style
 
-This design system embodies a **Sophisticated High-Tech** personality, drawing inspiration from high-end aerospace and fintech aesthetics. The brand's emotional core is centered on precision, foresight, and quiet confidence. It targets professional users who value efficiency and deep focus.
-
-The visual style is **Premium Noir**, a refined fusion of minimalism and glassmorphism. It leverages deep obsidian surfaces, crisp high-contrast typography, and ethereal gradients to create a sense of infinite depth. The interface feels like a high-performance instrument—clean, intentional, and technologically advanced.
-
-Key attributes:
-- **Precision-driven:** Sharp edges and generous letter-spacing.
-- **Atmospheric:** Deep dark modes with subtle glow effects.
-- **Selective Vibrancy:** Color is used sparingly but impactfully to denote action and status.
+**Editorial Minimalism** meets **Tactile Restraint**. The interface behaves like a calm,
+singular chief of staff: unobtrusive, discreetly proactive, profoundly legible. Generous
+negative space gives every decision room to breathe; deliberate contrast directs visual
+energy strictly toward the current, single most important thing — never toward decoration.
 
 ## Colors
 
-The palette is anchored in a "Noir" foundation, utilizing deep indigos and blacks to provide maximum contrast for the signature gradient.
+A high-fidelity light workspace grounded in warm porcelain surfaces and deep architectural
+ink, replacing the previous dark "Premium Noir" palette.
 
-- **Primary & Accent:** The core identity uses a vibrant gradient transitioning from `#8B5CF6` (Violet) to `#3B82F6` (Blue). This should be used for primary actions, progress indicators, and key brand moments.
-- **Surface Strategy:** Backgrounds utilize a multi-layered dark approach. The base is a deep indigo-black (`#0F172A`), while elevated surfaces use subtle variations to create hierarchy without relying on heavy borders.
-- **Functional Colors:** Success, warning, and error states are desaturated to maintain the premium aesthetic, ensuring they don't clash with the primary violet accent.
+- **Canvas & Surfaces:** Warm white background (`#f7f8fa`) softens eye strain versus a
+  sterile pure white; elevated cards/inputs use pure white (`#ffffff`) with a hairline
+  border (`#eaebed`) rather than a shadow-heavy look.
+- **Ink:** Deep navy (`#0b1020`) carries headlines, body text, and primary button fills.
+  Secondary/metadata text uses a muted slate (`#64748b`) to stay quiet.
+- **Accent — Electric Violet (`#5b3ce6`):** Used sparingly: focus rings, active filter/chip
+  states, hover links. Never used as a generic background fill.
+- **Success — Pale Mint (`#22e0c5` / tint `#e6faf6`):** Reserved for completed/resolved
+  states (the done-checkbox fill and checkmark) — a quiet confirmation, not an alarm color.
+- **Error (`#ba1a1a`):** Overdue tasks and validation errors.
 
 ## Typography
 
-Typography is the cornerstone of this design system's "High-Tech" feel. 
+A two-family pairing: **Newsreader** for editorial moments, **Manrope** for everything
+operational.
 
-- **Headlines:** Use **Hanken Grotesk** for all headings. Its sharp terminals and modern geometric construction provide an architectural feel. For large display moments, use tight tracking; for smaller headers, allow the font to breathe.
-- **Body:** **Manrope** is selected for its exceptional legibility and balanced proportions. It maintains a clean look in dense data environments.
-- **Data & Mono:** **JetBrains Mono** is introduced for labels, metadata, and technical readouts to reinforce the systematic, developer-grade aesthetic.
+- **Headlines (Newsreader):** Screen titles only (e.g. "Heute.") — an intimate, considered
+  tone rather than a generic SaaS header.
+- **Everything else (Manrope):** Task titles, inputs, chips, metadata — kept as the existing
+  body typeface for legibility at a glance; unchanged from before this design refresh.
 
 ## Layout & Spacing
 
-The layout philosophy follows a **Fluid-Fixed Hybrid** model. Content is contained within a maximum width of 1440px on desktop but remains fluid within smaller breakpoints.
-
-- **Rhythm:** A strict 4px / 8px grid governs all spatial relationships. 
-- **Grid:** A 12-column system is used for desktop (24px gutters), collapsing to 6 columns for tablet and 2 columns for mobile.
-- **Density:** The system favors high-density layouts for data-heavy views but switches to "Cinematic Density" (increased whitespace) for landing pages and dashboard overviews.
+Unchanged from before: a single centered reading column (`max-w-2xl`), no sidebar, no grid
+system. Spacing follows the same 4px rhythm as before, just realized in the new palette.
 
 ## Elevation & Depth
 
-Depth is conveyed through **Tonal Layering** and **Backdrop Blurs** rather than traditional heavy shadows.
+Depth via **hairline borders + soft ambient shadow**, not heavy drop-shadows:
 
-- **Surface Levels:** 
-    - `L0`: Base background (`#0F172A`).
-    - `L1`: Content cards (10% lighter than base, subtle 1px border at 10% opacity).
-    - `L2`: Overlays and modals (using backdrop-filter: blur(12px) and a semi-transparent surface).
-- **Glow Effects:** Critical interactive elements (like active states or primary buttons) may emit a soft, 15% opacity violet glow to simulate hardware illumination.
+- **Ghost borders:** Cards and inputs are framed by a 1px `#eaebed` border against the
+  `#f7f8fa` background.
+- **Ambient focus elevation:** The capture bar lifts on focus with a soft, violet-tinted
+  diffused shadow (`0 8px 32px rgba(91,60,230,0.08)`).
+- **Frosted header:** The top navigation bar is translucent white with a backdrop blur, so
+  content integrates invisibly as the page scrolls underneath it.
 
 ## Shapes
 
-The shape language is **Technical & Precise**. 
-
-- **Radius:** A standard `0.25rem` (4px) radius is used for most components (buttons, inputs) to maintain a sharp, professional look. 
-- **Large Containers:** Cards and large sections use `0.5rem` (8px) to soften the overall structure slightly without appearing "bubbly."
-- **Interactive States:** Use sharp transitions. Avoid heavy rounding (pill shapes) unless used for specific status chips.
+- **Interactive pills:** Buttons, filter chips, and date/category tags are fully rounded
+  (`rounded-full`) — unchanged from before, now in the new palette.
+- **Cards:** The capture bar uses a generous `2rem` (`--radius-task`) radius — softer than
+  the previous theme's `0.5rem`, in line with the new design's rounder, more tactile feel.
 
 ## Components
 
 ### Buttons
-- **Primary:** Gradient background (Violet to Blue), white text, sharp corners. On hover, the gradient brightness increases.
-- **Ghost:** Transparent background with a 1px `#8B5CF6` border. Text is white.
+- **Primary:** Solid ink (`#0b1020`) background, background-colored (near-white) text, pill
+  radius. Replaces the previous violet-to-blue gradient button.
+- **Filter/toggle chips:** Transparent with a hairline border; active state uses a 10%
+  accent-tinted fill with accent-colored text and border (unchanged pattern, new colors).
+
+### Cards (Capture bar)
+- White fill, hairline border, `2rem` radius, soft ambient shadow that intensifies on focus
+  with a 1.5px violet ring.
+
+### Lists & Task Rows
+- Borderless rows with a light hover fill, 12px vertical rhythm between rows. The
+  circular completion control is an outlined circle that fills with the mint tint and a
+  crisp mint checkmark on completion — no heavy card treatment per row, keeping the list
+  dense and calm rather than turning every task into its own bordered card.
 
 ### Input Fields
-- **Default:** Dark fill with a subtle bottom border or 1px outline. When focused, the border transitions to the primary violet and a subtle glow is applied.
-- **Typography:** Placeholder text uses JetBrains Mono for a technical feel.
-
-### Cards
-- **Structure:** No external shadows. Depth is achieved via a slightly lighter fill than the background and a hairline border (`rgba(255,255,255,0.1)`).
-
-### Chips & Tags
-- **Style:** Small, all-caps labels using JetBrains Mono. Backgrounds should be low-opacity versions of the status color (e.g., 10% Violet fill with 100% Violet text).
-
-### Navigation
-- **Sidebars:** Integrated into the layout with a vertical separator and glassmorphic blurs on mobile. Navigation items use high-contrast white for active states and desaturated indigo for inactive states.
+- Frameless within the capture card, or pill-enclosed for inline edits (date, chips).
+  Focus state: 1.5px accent ring, no heavy glow.

@@ -1,13 +1,13 @@
 <x-layouts.app :title="'netuqo · Heute'" active="today">
     <section class="mb-10">
-        <h1 class="text-3xl font-semibold tracking-tight text-text">Heute.</h1>
+        <h1 class="font-headline text-3xl font-medium tracking-tight text-text">Heute.</h1>
         <p class="mt-1 text-text-muted">Was ist wichtig.</p>
     </section>
 
     <section class="mb-10">
         <form method="POST" action="{{ route('tasks.store') }}" x-data="{ area: '' }">
             @csrf
-            <div class="rounded-[var(--radius-task)] border border-border bg-surface p-4 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+            <div class="rounded-[var(--radius-task)] border border-border bg-surface p-4 shadow-[0_4px_24px_rgba(11,16,32,0.03)] transition-shadow duration-300 focus-within:border-primary focus-within:ring-[1.5px] focus-within:ring-primary focus-within:shadow-[0_8px_32px_rgba(91,60,230,0.08)]">
                 <input
                     type="text"
                     name="title"
@@ -43,7 +43,7 @@
                     >Privat</button>
                     <button
                         type="submit"
-                        class="btn-gradient ml-auto rounded px-4 py-1.5 text-sm normal-case tracking-normal text-white"
+                        class="btn-primary ml-auto rounded-full px-4 py-1.5 text-sm normal-case tracking-normal"
                     >Hinzufügen</button>
                 </div>
             </div>
@@ -55,7 +55,7 @@
 
     <x-area-filter route="today" :area="$area" />
 
-    <section class="flex flex-col">
+    <section class="flex flex-col gap-3">
         @forelse ($tasks as $task)
             <x-task-row :task="$task" />
         @empty
