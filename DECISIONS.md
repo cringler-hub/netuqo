@@ -691,3 +691,87 @@ alternatives.
 
 **Simplicity impact:** None on the product. One extra temporary index, created and dropped
 within the same migration; no lasting schema complexity.
+
+---
+
+## 2026-09-03 — The "verified" fix above still failed in production; migration rewritten to check exact state before every step
+
+**Bug:** The previous entry's fix — locally verified against real MariaDB three ways — was
+deployed and **still failed**, this time with `Can't DROP FOREIGN KEY
+'activities_task_id_foreign'; check that it exists`. The fix itself was correct for the state
+it was tested against; the problem was that production's *actual* state had drifted further
+than that. MySQL DDL auto-commits per statement and isn't wrapped in a migration-wide
+transaction, so the second failed attempt (the previous entry) had already succeeded in
+dropping the `task_id` foreign key before it failed on the next statement — but the migration
+was never recorded as run, so the third attempt still assumed the FK was there and tried to
+drop it again. Each failed deploy left production one step further along than whatever state
+was last hand-reproduced and tested locally, so "verified against a hand-reproduced copy of
+the stuck state" kept describing a state that was already stale by the time the next attempt
+ran.
+
+**Confirmed via a disposable diagnostic workflow** (`.github/workflows/diag-500.yml`,
+SSH + `artisan tinker` calling `Schema::getColumns()`/`getIndexes()`/`getForeignKeys()`
+directly against production) rather than guessing: `task_id` NOT NULL, `task_id_new`
+nullable and already populated, indexes `activities_task_id_foreign` (a leftover
+single-column index, not a constraint — dropping the FK doesn't drop the index MySQL
+auto-created for it), `activities_user_id_index` (successfully added by the previous
+attempt), and the composite `activities_user_id_task_id_index`, still no `context` column,
+0 rows in `migrations`, and — critically — only `activities_user_id_foreign` in the foreign
+keys list. No `task_id` foreign key left to drop.
+
+**Fix:** Rewrote `up()` so every mutating step checks its own exact precondition via
+`Schema::getIndexes('activities')` / `Schema::getForeignKeys('activities')` immediately
+before running, instead of one coarse `hasColumn('task_id_new')` gate around a whole block of
+steps. Each step is now safe to run, or skip, independent of which of the others already
+ran: add the standalone `user_id` index only if it doesn't already exist; drop the `task_id`
+foreign key only if one is actually there (and by its *real* name, not the conventional one
+— see below); drop the composite index only if it's still present; drop the `task_id` column
+unconditionally once reached (also cleans up any leftover single-column index); rename
+`task_id_new` back only if it still exists; recreate the foreign key and composite index only
+if missing; drop the now-redundant helper index only once both the helper and the composite
+index exist. This makes the migration correct to resume from *any* partial state, not just
+the ones observed after each failure — closing off this entire class of bug rather than
+patching the one specific drifted state found this time.
+
+**A second, related bug found and fixed while writing this:** the first version of the
+precondition check looked up the foreign key's name and only dropped it `if ($name = ...)`
+— but `Schema::getForeignKeys()` returns `'name' => null` on SQLite (SQLite doesn't name FK
+constraints at all), so that falsy check silently skipped dropping the FK on SQLite and broke
+every local test (`unknown column "task_id" in foreign key definition` on `dropColumn`).
+Fixed by checking for the foreign key's *existence* separately from its name, and dropping
+by real name only when the driver reports one (MySQL), falling back to the column-array form
+Laravel resolves conventionally when it doesn't (SQLite). Caught by running the full local
+test suite against SQLite after the MySQL-side fix, before this was trusted as done.
+
+**Verified, this time against all of the following before pushing:**
+1. Clean `migrate:fresh` on real MariaDB.
+2. A hand-reproduced copy of production's *exact* diagnosed drifted state (matching the
+   diagnostic output above column-for-column, index-for-index) on real MariaDB.
+3. A full `migrate:rollback` → `migrate` → `migrate` (no-op) cycle on real MariaDB.
+4. The full local test suite (34 tests) against SQLite.
+5. `vendor/bin/pint`.
+
+**Why this matters for future sessions:** verifying a migration fix against *a* stuck state
+is not the same as verifying it against *every* state that state could still drift into on a
+later failed retry. On a non-transactional DDL engine, a migration that guards with one
+coarse "have I done step N yet" check is only as safe as that one observed failure mode —
+the next failure can land between any two of its statements. Prefer per-statement
+preconditions checked via real schema introspection (`Schema::getIndexes()` /
+`Schema::getForeignKeys()` — driver-agnostic, available on Laravel 13) over a single
+`hasColumn` gate around a multi-step block, for any migration that touches foreign keys or
+indexes and might partially fail. And re-run the full test suite against SQLite after any
+MySQL-focused fix — the two drivers' schema introspection isn't just differently *behaved*,
+it can differ in what a field even *means* (a null constraint name isn't "absent").
+
+**Rejected alternative:** manually patching production's schema by hand via SSH to match
+what a simpler migration would expect, then shipping a simpler fix against that clean state.
+Rejected because `CLAUDE.md` prohibits developing/hand-editing production directly, and
+because the whole point of this rewrite is that the migration itself should be trustworthy
+without needing a hand-patched starting point — the next unrelated schema change might also
+partially fail for unrelated reasons, and the migration should still be able to recover.
+
+**Simplicity impact:** None on the product. The migration itself is more verbose (two small
+introspection helper closures, precondition checks around each step) than a version that
+assumed a single known starting state, but that verbosity is the actual minimum needed to be
+correct on a non-transactional DDL engine that already drifted three times — not speculative
+generality.

@@ -16,19 +16,44 @@ return new class extends Migration
      *   overdue when completed) so a later analysis doesn't have to replay other events
      *   to reconstruct state at that point in time.
      *
-     * Written defensively (Schema::hasColumn guards) because the first two versions of
-     * this migration broke on production: the `user_id`+`task_id` composite index is
-     * also the only index that supports the separate `activities_user_id_foreign` key,
-     * so dropping it fails on MySQL ("needed in a foreign key constraint") unless
-     * `user_id` gets a standalone index first — a MySQL-only quirk SQLite never
-     * surfaces, only found by reproducing production's exact state against a real
-     * MySQL/MariaDB instance. That left a real, populated `task_id_new` column stuck on
-     * the live table with the migration never recorded as run — every deploy's
-     * `migrate --force` retried it and failed again. This version resumes correctly
-     * from that exact state as well as from a clean database. See DECISIONS.md.
+     * Every step below checks its own precondition via Schema::getIndexes()/
+     * getForeignKeys()/hasColumn() rather than one coarse guard, because three earlier
+     * versions of this migration each broke differently on production, and each failed
+     * deploy left MySQL DDL changes (auto-committed per-statement, no transaction)
+     * partially applied without the migration ever being recorded as run — so the next
+     * deploy's `migrate --force` resumed from a state one step further drifted than the
+     * one before it. This version tolerates resuming from any partial state, not just
+     * the ones observed so far. See DECISIONS.md.
      */
     public function up(): void
     {
+        $hasIndex = function (string $name, array $columns): bool {
+            foreach (Schema::getIndexes('activities') as $index) {
+                if ($index['name'] === $name && $index['columns'] === $columns) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        // Returns the foreign key entry for the given columns, or null if none exists.
+        // Dropping by column list alone (Blueprint::dropForeign(['task_id'])) assumes
+        // Laravel's conventional name and fails if the real name differs — as it can
+        // here, since a local rollback recreates it as `activities_task_id_old_foreign`
+        // — so drops below go by the actual name where the driver reports one. SQLite
+        // never names foreign keys (always reports null), so a null name isn't "not
+        // found" — it falls back to the column-array form, which SQLite does support.
+        $foreignKeyOn = function (array $columns): ?array {
+            foreach (Schema::getForeignKeys('activities') as $foreignKey) {
+                if ($foreignKey['columns'] === $columns) {
+                    return $foreignKey;
+                }
+            }
+
+            return null;
+        };
+
         if (! Schema::hasColumn('activities', 'task_id_new')) {
             Schema::table('activities', function (Blueprint $table) {
                 $table->foreignId('task_id_new')->nullable()->after('task_id');
@@ -37,47 +62,58 @@ return new class extends Migration
             DB::table('activities')->update(['task_id_new' => DB::raw('task_id')]);
         }
 
-        if (Schema::hasColumn('activities', 'task_id_new')) {
-            // The real reason the first two attempts at this migration failed on
-            // production (confirmed by reproducing it against a real MySQL/MariaDB
-            // instance, not just SQLite, which never exercises this path): the
-            // composite `user_id`+`task_id` index is the ONLY index InnoDB has that
-            // leads with `user_id`, so it's also the supporting index for the
-            // (unrelated) `activities_user_id_foreign` foreign key. Dropping it — no
-            // matter the statement order relative to the task_id foreign key — fails
-            // with "needed in a foreign key constraint" because that would leave the
-            // user_id foreign key without any index at all. The fix is to give the
-            // user_id foreign key its own standalone index first, so the composite
-            // index is free to drop.
+        // The `user_id`+`task_id` composite index is the ONLY index InnoDB has that
+        // leads with `user_id`, so it's also the supporting index for the (unrelated)
+        // `activities_user_id_foreign` key — MySQL refuses to drop it without a
+        // standalone `user_id` index to take over first, regardless of the task_id
+        // foreign key's own state.
+        if (! $hasIndex('activities_user_id_index', ['user_id'])) {
             Schema::table('activities', function (Blueprint $table) {
                 $table->index('user_id', 'activities_user_id_index');
             });
+        }
 
-            Schema::table('activities', function (Blueprint $table) {
-                $table->dropForeign(['task_id']);
-            });
+        if (Schema::hasColumn('activities', 'task_id')) {
+            if ($foreignKey = $foreignKeyOn(['task_id'])) {
+                Schema::table('activities', function (Blueprint $table) use ($foreignKey) {
+                    $table->dropForeign($foreignKey['name'] ?? ['task_id']);
+                });
+            }
 
-            Schema::table('activities', function (Blueprint $table) {
-                $table->dropIndex(['user_id', 'task_id']);
-            });
+            if ($hasIndex('activities_user_id_task_id_index', ['user_id', 'task_id'])) {
+                Schema::table('activities', function (Blueprint $table) {
+                    $table->dropIndex(['user_id', 'task_id']);
+                });
+            }
 
-            // Dropping the column also removes the single-column index MySQL
-            // auto-created to support the foreign key we just dropped.
+            // Also drops any leftover single-column index MySQL auto-created for a
+            // foreign key that a previous, partially-failed attempt already dropped.
             Schema::table('activities', function (Blueprint $table) {
                 $table->dropColumn('task_id');
             });
+        }
 
+        if (Schema::hasColumn('activities', 'task_id_new')) {
             Schema::table('activities', function (Blueprint $table) {
                 $table->renameColumn('task_id_new', 'task_id');
             });
+        }
 
+        if (! $foreignKeyOn(['task_id'])) {
             Schema::table('activities', function (Blueprint $table) {
                 $table->foreign('task_id')->references('id')->on('tasks')->nullOnDelete();
+            });
+        }
+
+        if (! $hasIndex('activities_user_id_task_id_index', ['user_id', 'task_id'])) {
+            Schema::table('activities', function (Blueprint $table) {
                 $table->index(['user_id', 'task_id']);
             });
+        }
 
-            // The composite index above covers user_id again (as its leading column),
-            // so the standalone helper index is redundant now — drop it.
+        // The composite index above covers user_id again (as its leading column), so
+        // the standalone helper index is redundant once both exist — drop it.
+        if ($hasIndex('activities_user_id_index', ['user_id']) && $hasIndex('activities_user_id_task_id_index', ['user_id', 'task_id'])) {
             Schema::table('activities', function (Blueprint $table) {
                 $table->dropIndex('activities_user_id_index');
             });
