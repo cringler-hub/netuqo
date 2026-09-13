@@ -108,10 +108,10 @@ class TaskCaptureTest extends TestCase
         $this->post('/tasks', ['title' => 'Angebot prüfen', 'due_at' => now()->format('Y-m-d')]);
 
         $this->get('/')->assertOk()->assertSeeInOrder([
-            'Überfällig',
-            'Rechnung schreiben',
             'Heute fällig',
             'Angebot prüfen',
+            'Überfällig',
+            'Rechnung schreiben',
         ]);
     }
 

@@ -1235,3 +1235,8 @@ Heute fällig live.
 tasks existing at all — the default (nothing overdue) state is pixel-for-pixel unchanged.
 Net effect is less clutter on the one screen the manifesto says must answer "what needs my
 attention today" in under 10 seconds, not more.
+
+**2026-09-13, same day — reordered:** User asked to see "Heute fällig" first, "Überfällig"
+second (below), the reverse of the initial order. Swapped in `today.blade.php`; no change to
+`TodayController`'s partitioning or `task-row.blade.php`'s quick-reschedule button. Updated
+the one order-sensitive test (`assertSeeInOrder`) to match.

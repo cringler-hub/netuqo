@@ -56,19 +56,10 @@
     <x-area-filter route="today" :area="$area" :counts="$counts" />
 
     @if ($overdueTasks->isNotEmpty())
-        <section class="mb-6">
-            <h2 class="mb-2 font-claim text-xs font-semibold uppercase tracking-wide text-danger">Überfällig</h2>
-            <div class="flex flex-col gap-3">
-                @foreach ($overdueTasks as $task)
-                    <x-task-row :task="$task" />
-                @endforeach
-            </div>
-        </section>
-
         <h2 class="mb-2 font-claim text-xs font-semibold uppercase tracking-wide text-text-muted">Heute fällig</h2>
     @endif
 
-    <section class="flex flex-col gap-3">
+    <section class="flex flex-col gap-3 {{ $overdueTasks->isNotEmpty() ? 'mb-6' : '' }}">
         @forelse ($todayTasks as $task)
             <x-task-row :task="$task" />
         @empty
@@ -77,4 +68,15 @@
             </p>
         @endforelse
     </section>
+
+    @if ($overdueTasks->isNotEmpty())
+        <section>
+            <h2 class="mb-2 font-claim text-xs font-semibold uppercase tracking-wide text-danger">Überfällig</h2>
+            <div class="flex flex-col gap-3">
+                @foreach ($overdueTasks as $task)
+                    <x-task-row :task="$task" />
+                @endforeach
+            </div>
+        </section>
+    @endif
 </x-layouts.app>
