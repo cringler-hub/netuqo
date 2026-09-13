@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\CurrentUser;
+use App\Support\TaskWindow;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 abstract class Controller
 {
@@ -16,24 +18,30 @@ abstract class Controller
      */
     protected function currentUser(): User
     {
-        return User::firstOrCreate(
-            ['email' => 'owner@netuqo.com'],
-            ['name' => 'Owner', 'password' => Hash::make(Str::random(40))],
-        );
+        return CurrentUser::resolve();
     }
 
     /**
-     * Shared boundaries for the Diese Woche / Diesen Monat / Später split, so the three
-     * pages can't drift out of sync on where one bucket ends and the next begins.
-     *
      * @return array{0: Carbon, 1: Carbon} [endOfWeek, monthCutoff]
      */
     protected function weekAndMonthCutoffs(): array
     {
-        $endOfWeek = now()->endOfWeek();
-        $endOfMonth = now()->endOfMonth();
-        $monthCutoff = $endOfMonth->greaterThan($endOfWeek) ? $endOfMonth : $endOfWeek;
+        return TaskWindow::cutoffs();
+    }
 
-        return [$endOfWeek, $monthCutoff];
+    /**
+     * Counts for the area-filter chips (Alle/Business/Privat), for the given screen's
+     * own bucket of tasks — independent of whichever area filter is currently applied,
+     * so a chip always shows what you'd see if you switched to it.
+     *
+     * @return array{all: int, business: int, private: int}
+     */
+    protected function areaCounts(Builder|Relation $query): array
+    {
+        return [
+            'all' => (clone $query)->count(),
+            'business' => (clone $query)->where('area', 'business')->count(),
+            'private' => (clone $query)->where('area', 'private')->count(),
+        ];
     }
 }

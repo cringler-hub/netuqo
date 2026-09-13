@@ -15,15 +15,17 @@ class TodayController extends Controller
     {
         $area = $request->query('area');
 
-        $tasks = $this->currentUser()->tasks()
+        $base = $this->currentUser()->tasks()
             ->where('status', 'open')
             ->whereNotNull('due_at')
-            ->whereDate('due_at', '<=', now())
+            ->whereDate('due_at', '<=', now());
+
+        $tasks = (clone $base)
             ->when($area, fn ($query) => $query->where('area', $area))
             ->orderBy('due_at')
             ->orderBy('created_at')
             ->get();
 
-        return view('today', ['tasks' => $tasks, 'area' => $area]);
+        return view('today', ['tasks' => $tasks, 'area' => $area, 'counts' => $this->areaCounts($base)]);
     }
 }

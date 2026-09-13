@@ -4,7 +4,7 @@
         <p class="font-claim mt-1 text-text-muted">Was im Blick bleiben soll.</p>
     </section>
 
-    <x-area-filter route="month" :area="$area" />
+    <x-area-filter route="month" :area="$area" :counts="$counts" />
 
     <section class="flex flex-col gap-3">
         @forelse ($tasks as $task)

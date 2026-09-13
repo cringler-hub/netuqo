@@ -1142,3 +1142,61 @@ the user's own browser, which won't hit whatever's rejecting datacenter-origin c
 **Simplicity impact:** None on the product. Time-boxing a debugging tangent once it stopped
 producing new information, rather than continuing to guess — the workflow's actual purpose
 was already achieved and confirmed through a channel unaffected by the curl issue.
+
+---
+
+## 2026-09-13 — Added task counts to the nav and area-filter chips
+
+**Context:** After ~2 weeks of real personal use, user reported overdue tasks piling up and
+making "Heute" feel cluttered (a separate, still-open discussion — see the recommendation
+given but not yet implemented: group overdue tasks visually and add a one-click "auf heute
+verschieben" instead of hiding them, which would work against "nothing important gets lost").
+Alongside that, asked for a small, self-contained improvement: show counts in parentheses
+next to Business/Privat in the area filter (e.g. "Privat (4)") and next to each nav item
+(Heute/Diese Woche/etc.) — glanceable orientation, not a new feature surface.
+
+**What changed:**
+- `app/Support/TaskWindow::cutoffs()` — the week/month boundary calculation, extracted out
+  of `Controller::weekAndMonthCutoffs()` (which now just delegates) so both controllers and
+  the new nav-counts composer use the exact same boundaries, not two copies that could drift.
+- `app/Support/CurrentUser::resolve()` — same extraction for the single-"Owner"-user lookup,
+  for the same reason (`Controller::currentUser()` now delegates to it).
+- `Controller::areaCounts()` — given a screen's own base query (before the area filter is
+  applied), returns `[all, business, private]` counts, so a filter chip always shows what
+  you'd see if you clicked it, not just the currently-applied filter's count. Each of the
+  five screen controllers now builds its query once, then both counts and the actual task
+  list are derived from clones of it, rather than querying twice with hand-duplicated
+  conditions.
+- `app/View/Composers/NavCountsComposer.php` — shares nav-bar counts (today/week/month/
+  later/done) to the shared `components.layouts.app` view, registered in
+  `AppServiceProvider`.
+- `area-filter.blade.php` / `app.blade.php` — render `(n)` after each label when counts are
+  available.
+
+**Privacy consideration caught before shipping:** `/impressum`, `/datenschutz`, `/agb`,
+`/kontakt` are deliberately reachable without the password gate (Impressumspflicht) but share
+the same `x-layouts.app` header/nav as the gated screens. Nav counts computed unconditionally
+would have leaked "how many tasks exist" to anyone who opens the public Impressum page,
+without needing the gate password at all. Fixed: `NavCountsComposer` checks
+`session('gate_unlocked')` first and shares `null` (no query executed at all) when it's not
+set; the nav template only appends `(n)` when counts are actually present. Covered by a test
+that hits `/impressum` as a genuinely anonymous session and asserts no counts render.
+
+**Verified:** full test suite (49 tests, 4 new `CountsTest` cases — nav counts, per-screen
+area-chip counts, chip counts staying correct regardless of which filter is currently
+applied, and the anonymous-visitor privacy case) and Pint green; real-browser check across
+Heute/Später with seeded tasks across areas, and a genuinely cookie-less browser context
+confirming Impressum shows plain nav labels with no numbers.
+
+**Also fixed in passing:** `test_task_due_this_week_appears_on_week_page` was already broken
+before this change (confirmed via `git stash` on the original code) — it used
+`now()->endOfWeek()` to mean "later this week," which silently equals *today* whenever the
+test happens to run on a Sunday (Carbon's default week ends Sunday), making the assertion
+"not visible on Heute" fail. Not a nav-counts bug; pinned the test to a fixed Wednesday via
+`$this->travelTo()` so it can't go flaky again depending on which day it's run.
+
+**Simplicity impact:** Counts are compact, already-known numbers — no new screen, filter, or
+concept, matching "know a lot, show little." The `Controller::areaCounts()` extraction and
+`TaskWindow`/`CurrentUser` support classes are the minimum needed to compute those numbers
+correctly (same boundaries as the actual screens) without duplicating the bucket-boundary
+logic a second time somewhere it could quietly drift out of sync.

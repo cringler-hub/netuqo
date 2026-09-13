@@ -15,17 +15,19 @@ class LaterController extends Controller
         $area = $request->query('area');
         [, $monthCutoff] = $this->weekAndMonthCutoffs();
 
-        $tasks = $this->currentUser()->tasks()
+        $base = $this->currentUser()->tasks()
             ->where('status', 'open')
             ->where(function ($query) use ($monthCutoff) {
                 $query->whereNull('due_at')->orWhereDate('due_at', '>', $monthCutoff);
-            })
+            });
+
+        $tasks = (clone $base)
             ->when($area, fn ($query) => $query->where('area', $area))
             ->orderByRaw('due_at is null')
             ->orderBy('due_at')
             ->orderBy('created_at')
             ->get();
 
-        return view('later', ['tasks' => $tasks, 'area' => $area]);
+        return view('later', ['tasks' => $tasks, 'area' => $area, 'counts' => $this->areaCounts($base)]);
     }
 }

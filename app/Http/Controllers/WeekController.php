@@ -15,15 +15,17 @@ class WeekController extends Controller
         $area = $request->query('area');
         [$endOfWeek] = $this->weekAndMonthCutoffs();
 
-        $tasks = $this->currentUser()->tasks()
+        $base = $this->currentUser()->tasks()
             ->where('status', 'open')
             ->whereDate('due_at', '>', now())
-            ->whereDate('due_at', '<=', $endOfWeek)
+            ->whereDate('due_at', '<=', $endOfWeek);
+
+        $tasks = (clone $base)
             ->when($area, fn ($query) => $query->where('area', $area))
             ->orderBy('due_at')
             ->orderBy('created_at')
             ->get();
 
-        return view('week', ['tasks' => $tasks, 'area' => $area]);
+        return view('week', ['tasks' => $tasks, 'area' => $area, 'counts' => $this->areaCounts($base)]);
     }
 }

@@ -53,7 +53,7 @@
         @enderror
     </section>
 
-    <x-area-filter route="today" :area="$area" />
+    <x-area-filter route="today" :area="$area" :counts="$counts" />
 
     <section class="flex flex-col gap-3">
         @forelse ($tasks as $task)

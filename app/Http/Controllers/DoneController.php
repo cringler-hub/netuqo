@@ -11,12 +11,13 @@ class DoneController extends Controller
     {
         $area = $request->query('area');
 
-        $tasks = $this->currentUser()->tasks()
-            ->where('status', 'done')
+        $base = $this->currentUser()->tasks()->where('status', 'done');
+
+        $tasks = (clone $base)
             ->when($area, fn ($query) => $query->where('area', $area))
             ->orderByDesc('completed_at')
             ->get();
 
-        return view('done', ['tasks' => $tasks, 'area' => $area]);
+        return view('done', ['tasks' => $tasks, 'area' => $area, 'counts' => $this->areaCounts($base)]);
     }
 }

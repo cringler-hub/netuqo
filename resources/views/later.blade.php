@@ -4,7 +4,7 @@
         <p class="font-claim mt-1 text-text-muted">Was noch Zeit hat.</p>
     </section>
 
-    <x-area-filter route="later" :area="$area" />
+    <x-area-filter route="later" :area="$area" :counts="$counts" />
 
     <section class="flex flex-col gap-3">
         @forelse ($tasks as $task)

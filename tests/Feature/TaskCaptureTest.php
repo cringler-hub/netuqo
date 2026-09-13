@@ -104,12 +104,20 @@ class TaskCaptureTest extends TestCase
 
     public function test_task_due_this_week_appears_on_week_page(): void
     {
+        // Pinned to a Wednesday: "due later this week" is only a meaningful, non-empty
+        // bucket when today isn't already the last day of the week (Carbon's default
+        // week ends Sunday) — running this on a real Sunday would leave nothing left
+        // in "this week" after today, making the test itself meaningless that day.
+        $this->travelTo(now()->parse('2026-01-07'));
+
         $this->post('/tasks', ['title' => 'Wocheneinkauf', 'due_at' => now()->endOfWeek()->format('Y-m-d')]);
 
         $this->get('/')->assertOk()->assertDontSee('Wocheneinkauf');
         $this->get('/week')->assertOk()->assertSee('Wocheneinkauf');
         $this->get('/month')->assertOk()->assertDontSee('Wocheneinkauf');
         $this->get('/later')->assertOk()->assertDontSee('Wocheneinkauf');
+
+        $this->travelBack();
     }
 
     public function test_task_due_this_month_appears_on_month_page(): void
