@@ -8,8 +8,10 @@ use Illuminate\View\View;
 class TodayController extends Controller
 {
     /**
-     * Heute: open tasks due today or overdue — what needs attention now.
-     * Open tasks due later (or with no due date) live on the "Später" screen instead.
+     * Heute: open tasks due today or overdue — what needs attention now. Split into two
+     * groups so overdue tasks (a cleanup list) don't crowd out what's actually due today
+     * (the main event) — see DECISIONS.md. Open tasks due later (or with no due date)
+     * live on the "Später" screen instead.
      */
     public function index(Request $request): View
     {
@@ -26,6 +28,15 @@ class TodayController extends Controller
             ->orderBy('created_at')
             ->get();
 
-        return view('today', ['tasks' => $tasks, 'area' => $area, 'counts' => $this->areaCounts($base)]);
+        [$overdueTasks, $todayTasks] = $tasks->partition(
+            fn ($task) => $task->due_at->isBefore(now()->startOfDay())
+        );
+
+        return view('today', [
+            'todayTasks' => $todayTasks,
+            'overdueTasks' => $overdueTasks,
+            'area' => $area,
+            'counts' => $this->areaCounts($base),
+        ]);
     }
 }

@@ -148,6 +148,17 @@
                     >Heute</button>
                 </form>
             </div>
+            @if ($isOverdue)
+                <form method="POST" action="{{ route('tasks.update', $task) }}">
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="due_at" value="{{ now()->format('Y-m-d') }}">
+                    <button
+                        type="submit"
+                        class="rounded-full border border-danger/30 px-2 py-0.5 uppercase tracking-wide text-danger transition-colors hover:bg-danger/10"
+                    >Auf heute</button>
+                </form>
+            @endif
         @endif
     </div>
     <form method="POST" action="{{ route('tasks.destroy', $task) }}" onsubmit="return confirm('Aufgabe wirklich löschen?')" class="hidden sm:block">

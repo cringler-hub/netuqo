@@ -1200,3 +1200,38 @@ concept, matching "know a lot, show little." The `Controller::areaCounts()` extr
 `TaskWindow`/`CurrentUser` support classes are the minimum needed to compute those numbers
 correctly (same boundaries as the actual screens) without duplicating the bucket-boundary
 logic a second time somewhere it could quietly drift out of sync.
+
+---
+
+## 2026-09-13 — Split "Heute" into Überfällig / Heute fällig, with one-click reschedule
+
+**Context:** Following up on the user's own two-week-of-real-use feedback (overdue tasks
+making Heute feel cluttered) and this session's earlier recommendation (don't hide overdue
+tasks — an overdue task is exactly what needs attention; make clearing them faster instead).
+User asked for that recommendation to be implemented as described.
+
+**What changed:**
+- `TodayController` now partitions its (already-fetched) task list into `$overdueTasks` and
+  `$todayTasks` after querying — no new query, no change to what counts as "on Heute" (still
+  due today or earlier, same as before; the nav badge and area-filter counts are unaffected,
+  since they're computed from the combined base query).
+- `today.blade.php` renders `$overdueTasks` under an "Überfällig" heading first (only when
+  non-empty), then `$todayTasks` under it — with a "Heute fällig" heading appearing only
+  when there's also an overdue group to distinguish it from (keeps the common, no-overdue
+  case exactly as clutter-free as before: no headings at all).
+- `task-row.blade.php` gained a one-click "Auf heute" button, shown only on overdue rows
+  (reusing the already-computed `$isOverdue`), that PATCHes `due_at` to today directly — no
+  need to open the existing date-edit popover first. Uses the same `tasks.update` route and
+  activity-logging path as every other due-date edit, so this isn't a new code path, just a
+  faster entry point to an existing one.
+
+**Verified:** full test suite (52 tests, 4 new — group ordering via `assertSeeInOrder`, no
+headings shown when nothing is overdue, and the one-click reschedule actually moves a task
+out of the overdue group) and Pint green; real-browser check with seeded overdue + today
+tasks confirming the visual split and clicking "Auf heute" moving a task from Überfällig to
+Heute fällig live.
+
+**Simplicity impact:** Two new headings and one new button, both conditional on overdue
+tasks existing at all — the default (nothing overdue) state is pixel-for-pixel unchanged.
+Net effect is less clutter on the one screen the manifesto says must answer "what needs my
+attention today" in under 10 seconds, not more.

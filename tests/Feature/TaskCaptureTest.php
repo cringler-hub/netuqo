@@ -102,6 +102,38 @@ class TaskCaptureTest extends TestCase
         $this->get('/')->assertOk()->assertDontSee('Überfällig');
     }
 
+    public function test_overdue_and_today_tasks_are_shown_in_separate_groups(): void
+    {
+        $this->post('/tasks', ['title' => 'Rechnung schreiben', 'due_at' => now()->subDays(2)->format('Y-m-d')]);
+        $this->post('/tasks', ['title' => 'Angebot prüfen', 'due_at' => now()->format('Y-m-d')]);
+
+        $this->get('/')->assertOk()->assertSeeInOrder([
+            'Überfällig',
+            'Rechnung schreiben',
+            'Heute fällig',
+            'Angebot prüfen',
+        ]);
+    }
+
+    public function test_no_group_headings_when_nothing_is_overdue(): void
+    {
+        $this->post('/tasks', ['title' => 'Angebot prüfen', 'due_at' => now()->format('Y-m-d')]);
+
+        $this->get('/')->assertOk()->assertDontSee('Heute fällig');
+    }
+
+    public function test_an_overdue_task_can_be_rescheduled_to_today_with_one_click(): void
+    {
+        $this->post('/tasks', ['title' => 'Rechnung schreiben', 'due_at' => now()->subDays(2)->format('Y-m-d')]);
+        $task = Task::first();
+
+        $this->patch(route('tasks.update', $task), ['due_at' => now()->format('Y-m-d')])
+            ->assertRedirect();
+
+        $this->assertSame(now()->format('Y-m-d'), $task->fresh()->due_at->format('Y-m-d'));
+        $this->get('/')->assertOk()->assertDontSee('Überfällig');
+    }
+
     public function test_task_due_this_week_appears_on_week_page(): void
     {
         // Pinned to a Wednesday: "due later this week" is only a meaningful, non-empty
